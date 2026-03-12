@@ -3425,6 +3425,10 @@ def recalc_charging_history_today():
     global TASKS, CHARGING_HISTORY_DB
 
     _LOGGER.info("Starting recalculation of today's charging history (hourly blocks)")
+    
+    now_hour = getHour()
+    
+    set_charging_rule(f"📟Recalculating today's charging history 0:00-{max(now_hour-1, 0)}:59")
     my_persistent_notification(
         f"📌 Starting {TITLE} recalculation of today's charging history (hourly blocks).\nThis may take a few minutes. Please wait...",
         title=f"{TITLE} recalculation",
@@ -3440,7 +3444,6 @@ def recalc_charging_history_today():
             _LOGGER.info(f"Removing existing charging history entry for {ts} to prepare for recalculation")
             CHARGING_HISTORY_DB.pop(ts, None)
     
-    now_hour = getHour()
     for hour in range(0, now_hour):
         task_name = f"{func_prefix}charging_history_{hour:02d}"
         ts = timestamp.replace(hour=hour, minute=0, second=0, microsecond=0)
@@ -3454,7 +3457,7 @@ def recalc_charging_history_today():
         task_set.add(TASKS[task_name])
 
     done, pending = task.wait(task_set)
-    
+    set_charging_rule(f"📟Recalculating today's last charging history {now_hour}:00-{now_hour}:59...")
     task_name = f"{func_prefix}charging_history_{now_hour}"
     TASKS[task_name] = task.create(
             charging_history,
@@ -3488,6 +3491,7 @@ def recalc_charging_history_today():
     else:
         _LOGGER.info("Recalc finished successfully")
         
+        set_charging_rule(f"📟Finished recalculation of today's charging history")
         my_persistent_notification(
             f"✅ Finished {TITLE} recalculation of today's charging history (hourly blocks) without errors.",
             title=f"{TITLE} recalculation complete",
