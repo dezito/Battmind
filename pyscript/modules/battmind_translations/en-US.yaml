@@ -318,6 +318,12 @@ ui:
     no_charging_modes_active: "No charging modes active\nCharging {watt}W"
     planned_charging: "Charging up to {emoji}"
     not_charging: "Not charging"
+    stopped: "Charging & discharging stopped"
+    grid_charging: "Charging from grid"
+    discharge_allowed: "Discharging allowed"
+    force_discharge: "Forced discharging"
+    charging_watt: "Charging {watt}W"
+    discharge_watt: "Discharging {watt}W"
 
   startup:
     configuration:

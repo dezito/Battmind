@@ -6776,7 +6776,7 @@ def charge_if_needed():
             set_charging_rule(f"⛔{i18n.t('ui.charge_if_needed.script_deactivated')}")
             return
         
-        charging_rule = None
+        charging_rule = i18n.t('ui.charge_if_needed.not_charging')
         powerwall_action = "stopped"
         
         TASKS[f"{func_prefix}cheap_grid_charge_hours"] = task.create(cheap_grid_charge_hours)
@@ -6800,26 +6800,31 @@ def charge_if_needed():
                 powerwall_action = "grid_charging"
                 
                 emoji = emoji_parse(CHARGE_HOURS[timestamp])
-                charging_rule = f"{i18n.t('ui.charge_if_needed.planned_charging', emoji=emoji)} {powerwall_watt_flow}W"
+                charging_rule = i18n.t('ui.charge_if_needed.planned_charging', emoji=emoji)
                 _LOGGER.info(f"Charging because of {emoji} {CHARGE_HOURS[timestamp]['Price']}{i18n.t('ui.common.valuta')}. ({MAX_KWH_CHARGING}kWh)")
             elif discharge_hour:
                 timestamp = discharge_hour
                 powerwall_action = "discharge_allowed"
                 
                 emoji = emoji_parse({'error': True})
-                charging_rule = f"Discharge allowed {powerwall_watt_flow}W"
+                charging_rule = i18n.t('ui.charge_if_needed.discharge_allowed')
             elif force_discharge_hour:
                 timestamp = force_discharge_hour
                 powerwall_action = "force_discharge"
                 
                 emoji = emoji_parse({'error': True})
-                charging_rule = f"Force discharge {powerwall_watt_flow}W"
+                charging_rule = i18n.t('ui.charge_if_needed.force_discharge')
             else:
                 _LOGGER.info("No rules for charging")
                 charging_rule = i18n.t('ui.charge_if_needed.not_charging')
                 
-        if charging_rule:
-            set_charging_rule(charging_rule)
+        if powerwall_watt_flow != 0:
+            if powerwall_watt_flow > 0 and CONFIG['home']['invert_powerwall_watt_flow_entity_id']:
+                charging_rule += f"\n{i18n.t('ui.charge_if_needed.charging_watt', watt=int(powerwall_watt_flow))}"
+            else:
+                charging_rule += f"\n{i18n.t('ui.charge_if_needed.discharging_watt', watt=int(powerwall_watt_flow))}"
+                
+        set_charging_rule(charging_rule)
             
         set_state(f"sensor.{__name__}_powerwall_action", new_state=powerwall_action)
         

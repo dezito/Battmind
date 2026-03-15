@@ -318,6 +318,12 @@ ui:
     no_charging_modes_active: "Ingen laderegler aktiv\n Lader {watt}W"
     planned_charging: "Lader op til {emoji}"
     not_charging: "Lader ikke"
+    stopped: "Laden & Entladen gestoppt"
+    grid_charging: "Lädt aus dem Netz"
+    discharge_allowed: "Entladen erlaubt"
+    force_discharge: "Erzwungene Entladung"
+    charging_watt: "Lädt {watt}W"
+    discharge_watt: "Entlädt {watt}W"
 
   startup:
     configuration:
