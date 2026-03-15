@@ -42,18 +42,18 @@ prompt_user() {
   done
 }
 
-# Ask the user if they want to uninstall Battmind
+# Ask the user if they want to uninstall BattMind
 echo -e "${BLUE}------------------------------------------${RESET}"
-echo -e "${BLUE}             Battmind Uninstall           ${RESET}"
+echo -e "${BLUE}             BattMind Uninstall           ${RESET}"
 echo -e "${BLUE}------------------------------------------${RESET}"
-if ! prompt_user "Are you sure you want to uninstall Battmind?"; then
+if ! prompt_user "Are you sure you want to uninstall BattMind?"; then
   echo -e "${YELLOW}Operation aborted. No changes were made.${RESET}"
   exit 0
 fi
 
 # Function to delete matching files and subdirectories from pyscript
 delete_pyscript_files() {
-  local source_dir="$REPO_DIR/Battmind/pyscript"
+  local source_dir="$REPO_DIR/BattMind/pyscript"
   local target_dir="$REPO_DIR/pyscript"
   
   if [ -d "$source_dir" ]; then
@@ -75,7 +75,7 @@ delete_pyscript_files() {
 
 # Function to delete matching files from scripts
 delete_script_files() {
-  local source_dir="$REPO_DIR/Battmind/scripts"
+  local source_dir="$REPO_DIR/BattMind/scripts"
   local target_dir="$REPO_DIR/scripts"
   
   if [ -d "$source_dir" ]; then

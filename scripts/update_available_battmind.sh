@@ -20,7 +20,7 @@ else
   fi
 fi
 
-cd "$REPO_DIR/Battmind"
+cd "$REPO_DIR/BattMind"
 
 # --- Ensure repo safety and fetch tags ---
 git config --global --add safe.directory "$PWD"
@@ -30,7 +30,7 @@ git fetch --tags >/dev/null 2>&1
 LOCAL_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 
 # --- Get latest release tag from GitHub ---
-LATEST_TAG=$(curl -fsSL "https://api.github.com/repos/dezito/Battmind/releases/latest" | jq -r '.tag_name // empty' || echo "")
+LATEST_TAG=$(curl -fsSL "https://api.github.com/repos/dezito/BattMind/releases/latest" | jq -r '.tag_name // empty' || echo "")
 
 if [ -z "$LATEST_TAG" ]; then
   echo "⚠️ Could not retrieve the latest release tag from GitHub."
@@ -48,7 +48,7 @@ else
   echo "🚀 Update available: $LATEST_TAG"
   echo
   echo "📋 What's Changed:"
-  BODY=$(curl -fsSL "https://api.github.com/repos/dezito/Battmind/releases/latest" | jq -r '.body // empty' || echo "")
+  BODY=$(curl -fsSL "https://api.github.com/repos/dezito/BattMind/releases/latest" | jq -r '.body // empty' || echo "")
   if [ -n "$BODY" ]; then
     echo "$BODY"
   else

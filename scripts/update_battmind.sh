@@ -20,19 +20,19 @@ else
   fi
 fi
 
-REPO_URL="https://github.com/dezito/Battmind.git"
+REPO_URL="https://github.com/dezito/BattMind.git"
 TARGET_TAG=${1:-latest}  # Example: ./update_battmind.sh v1.3.0
 
 # --- Ensure base directories exist ---
-mkdir -p "$REPO_DIR/packages" "$REPO_DIR/pyscript" "$REPO_DIR/scripts" "$REPO_DIR/Battmind"
+mkdir -p "$REPO_DIR/packages" "$REPO_DIR/pyscript" "$REPO_DIR/scripts" "$REPO_DIR/BattMind"
 
 # --- Clone or update the repository ---
-if [ ! -d "$REPO_DIR/Battmind/.git" ]; then
+if [ ! -d "$REPO_DIR/BattMind/.git" ]; then
   echo "🧩 Cloning repository from $REPO_URL"
-  git clone "$REPO_URL" "$REPO_DIR/Battmind"
+  git clone "$REPO_URL" "$REPO_DIR/BattMind"
 fi
 
-cd "$REPO_DIR/Battmind"
+cd "$REPO_DIR/BattMind"
 git config --global --add safe.directory "$PWD"
 git fetch --tags >/dev/null 2>&1
 
@@ -40,7 +40,7 @@ git fetch --tags >/dev/null 2>&1
 command -v jq >/dev/null 2>&1 || { echo "❌ jq not found. Install jq or run in an environment with jq."; exit 1; }
 
 if [ "$TARGET_TAG" = "latest" ]; then
-  TARGET_TAG=$(curl -s https://api.github.com/repos/dezito/Battmind/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+  TARGET_TAG=$(curl -s https://api.github.com/repos/dezito/BattMind/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
 fi
 
 if [ -z "$TARGET_TAG" ]; then
@@ -69,13 +69,13 @@ link_tree() {
   done
 }
 
-link_tree "$REPO_DIR/Battmind/pyscript" "$REPO_DIR/pyscript"
-link_tree "$REPO_DIR/Battmind/scripts" "$REPO_DIR/scripts"
+link_tree "$REPO_DIR/BattMind/pyscript" "$REPO_DIR/pyscript"
+link_tree "$REPO_DIR/BattMind/scripts" "$REPO_DIR/scripts"
 
 echo "✅ All hardlinks created successfully."
 
 # --- Display release notes ---
-BODY=$(curl -fsSL "https://api.github.com/repos/dezito/Battmind/releases/tags/$TARGET_TAG" | jq -r '.body // empty')
+BODY=$(curl -fsSL "https://api.github.com/repos/dezito/BattMind/releases/tags/$TARGET_TAG" | jq -r '.body // empty')
 echo
 echo "📋 What's Changed in $TARGET_TAG:"
 echo "${BODY:-No release notes found.}"

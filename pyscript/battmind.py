@@ -1625,7 +1625,7 @@ def notify_critical_change(cfg = {}, filename = None):
             battmind_select_release_missing = check_nested_keys_exist(cfg, battmind_select_release_entity)
             
             if battmind_select_release_missing:
-                _LOGGER.warning(f"Battmind select release entity update required: {battmind_select_release_missing}")
+                _LOGGER.warning(f"BattMind select release entity update required: {battmind_select_release_missing}")
                 
                 my_persistent_notification(
                     f"## {i18n.t('ui.notify_critical_change.important_header')}\n\n"
@@ -6231,7 +6231,7 @@ def load_power_values_db():
     for h in range(24):
         if h not in POWER_VALUES_DB:
             POWER_VALUES_DB[h] = {}
-        else: #Remove Battmind keys if exists
+        else: #Remove BattMind keys if exists
             dict_key_list = ("power_consumption", "ignored_consumption", "powerwall_charging_consumption",
                              "powerwall_discharging_consumption", "solar_production", "power_consumption_without_ignored",
                              "power_consumption_without_all_exclusion")

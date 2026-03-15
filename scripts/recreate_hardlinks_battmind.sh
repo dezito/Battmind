@@ -21,10 +21,10 @@ else
 fi
 
 # --- Base repo path ---
-REPO_PATH="$CONFIG_PATH/Battmind"
+REPO_PATH="$CONFIG_PATH/BattMind"
 
 if [ ! -d "$REPO_PATH" ]; then
-  echo "❌ Battmind folder not found in $CONFIG_PATH"
+  echo "❌ BattMind folder not found in $CONFIG_PATH"
   exit 1
 fi
 
@@ -67,15 +67,15 @@ else
   echo "⚠️ No scripts folder found in $REPO_PATH"
 fi
 
-# --- Scan root pyscript files for Battmind TITLE ---
-echo -e "\n🔍 Scanning for additional pyscript modules containing Battmind TITLE..."
-MATCHED_FILES=$(grep -l 'TITLE = f"Battmind ({__name__}.py)"' "$CONFIG_PATH/pyscript"/*.py 2>/dev/null || true)
+# --- Scan root pyscript files for BattMind TITLE ---
+echo -e "\n🔍 Scanning for additional pyscript modules containing BattMind TITLE..."
+MATCHED_FILES=$(grep -l 'TITLE = f"BattMind ({__name__}.py)"' "$CONFIG_PATH/pyscript"/*.py 2>/dev/null || true)
 
 # --- Remove ev.py from the list completely ---
 MATCHED_FILES=$(echo "$MATCHED_FILES" | grep -v '/ev.py$' || true)
 
 if [ -z "$MATCHED_FILES" ]; then
-  echo "ℹ️ No other Battmind pyscripts found with matching TITLE."
+  echo "ℹ️ No other BattMind pyscripts found with matching TITLE."
 else
   for SRC_FILE in $MATCHED_FILES; do
     BASENAME=$(basename "$SRC_FILE")
