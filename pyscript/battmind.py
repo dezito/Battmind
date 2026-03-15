@@ -4297,7 +4297,7 @@ def cheap_grid_charge_hours():
                 charging_plan[what_day]['charging_sessions'][timestamp]['reason'] = reason
                 
                 if timestamp in charging_plan[what_day]["discharge_timestamps"]:
-                    charging_plan[day]["discharge_timestamps"].remove(timestamp)
+                    charging_plan[what_day]["discharge_timestamps"].remove(timestamp)
             except Exception as e:
                 _LOGGER.error(f"Error in {sub_sub_func_name} what_day:{what_day} timestamp:{timestamp} battery_level_id:{battery_level_id}: {e} {type(e)}")
                 my_persistent_notification(
@@ -4547,6 +4547,9 @@ def cheap_grid_charge_hours():
                     remove_list = []
                     
                     for timestamp, price in sorted_by_cheapest_price:
+                        if sorted_timestamp.date() != timestamp.date():
+                            continue
+                        
                         if not in_between(timestamp, current_hour, sorted_timestamp):
                             continue
                         
@@ -4610,7 +4613,7 @@ def cheap_grid_charge_hours():
                                 charging_plan[day]['total_cost'] += cost_added
                                 reason = (
                                     f"<details><summary>{emoji_parse({'charging': True})}Dyreste timer ({price}/{battery_level_added:.0f}%)</summary>"
-                                    f"Prioriteret timer: **{sorted_hour}:00**<br>"
+                                    f"Prioriteret time: **{sorted_timestamp}**<br>"
                                     f"Prioriteret batteriniveau: **{sorted_battery_level:.1f}%**<br>"
                                     f"Prioriteret elpris: **{sorted_price}** valuta/kWh<br>"
                                     f"Højeste batteriniveau tidspunkt: **{highest_battery_level_timestamp.strftime('%H:%M')}**<br>"
@@ -4691,7 +4694,6 @@ def cheap_grid_charge_hours():
                     if charging_plan[day]['solar_kwh_prediction'][hour] <= 0.0:
                         continue
                     
-                    _LOGGER.info(f"Adding solar prediction for day:{day} hour:{hour} kWh:{charging_plan[day]['solar_kwh_prediction'][hour]} cost:{charging_plan[day]['solar_cost_prediction'][hour]}")
                     total_grid_solar_kwh.append(charging_plan[day]['solar_kwh_prediction'][hour])
                     total_grid_cost_prediction.append(charging_plan[day]['solar_cost_prediction'][hour])
                 
@@ -5386,6 +5388,10 @@ def cheap_grid_charge_hours():
     overview = []
     
     try:
+        for key, value in battery_expenses.items():
+            if not isinstance(value, (int, float)):
+                raise ValueError(f"Invalid type for battery_expenses[{key}]: expected int or float, got {type(value)}")
+            
         percentage = round(battery_expenses.get("battery_level_expenses_percentage", 0.0), 0)
         solar_percentage = round(battery_expenses.get("battery_level_expenses_solar_percentage", 0.0), 0)
         kwh = round(battery_expenses.get("battery_level_expenses_kwh", 0.0), 1)
