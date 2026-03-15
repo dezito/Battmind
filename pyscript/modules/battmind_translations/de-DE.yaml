@@ -323,7 +323,7 @@ ui:
     discharge_allowed: "Entladen erlaubt"
     force_discharge: "Erzwungene Entladung"
     charging_watt: "Lädt {watt}W"
-    discharge_watt: "Entlädt {watt}W"
+    discharging_watt: "Entlädt {watt}W"
 
   startup:
     configuration:

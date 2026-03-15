@@ -364,7 +364,7 @@ ui:
     discharge_allowed: "Afladning tilladt"
     force_discharge: "Tvangsafladning"
     charging_watt: "Lader {watt}W"
-    discharge_watt: "Aflader {watt}W"
+    discharging_watt: "Aflader {watt}W"
 
   startup:
     configuration:

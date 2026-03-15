@@ -323,7 +323,7 @@ ui:
     discharge_allowed: "Discharging allowed"
     force_discharge: "Forced discharging"
     charging_watt: "Charging {watt}W"
-    discharge_watt: "Discharging {watt}W"
+    discharging_watt: "Discharging {watt}W"
 
   startup:
     configuration:

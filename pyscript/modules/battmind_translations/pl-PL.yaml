@@ -323,7 +323,7 @@ ui:
     discharge_allowed: "Rozładowanie dozwolone"
     force_discharge: "Wymuszone rozładowanie"
     charging_watt: "Ładowanie {watt}W"
-    discharge_watt: "Rozładowanie {watt}W"
+    discharging_watt: "Rozładowanie {watt}W"
 
   startup:
     configuration:
