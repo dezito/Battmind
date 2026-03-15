@@ -318,6 +318,12 @@ ui:
     no_charging_modes_active: "Brak aktywnych trybów ładowania\nŁadowanie {watt}W"
     planned_charging: "Ładowanie do {emoji}"
     not_charging: "Nie ładuje"
+    stopped: "Ładowanie i rozładowanie zatrzymane"
+    grid_charging: "Ładowanie z sieci"
+    discharge_allowed: "Rozładowanie dozwolone"
+    force_discharge: "Wymuszone rozładowanie"
+    charging_watt: "Ładowanie {watt}W"
+    discharge_watt: "Rozładowanie {watt}W"
 
   startup:
     configuration:
