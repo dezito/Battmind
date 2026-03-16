@@ -38,6 +38,8 @@ charging_type:
     description: "Ładowanie zablokowane"
   profit:
     description: "Oszczędności i przychód ze sprzedaży energii przy rozładowaniu"
+  average:
+    description: "Średnie zużycie"
 
 # ---- config ----
 config:

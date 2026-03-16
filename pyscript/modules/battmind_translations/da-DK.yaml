@@ -38,6 +38,8 @@ charging_type:
     description: "Ladning blokeret"
   profit:
     description: "Besparelse og salgsindtægt ved afladning"
+  average:
+    description: "Gennemsnitlig forbrug"
 
 # ---- config ----
 config:

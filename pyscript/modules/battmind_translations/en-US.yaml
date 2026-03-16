@@ -38,6 +38,8 @@ charging_type:
     description: "Charging blocked"
   profit:
     description: "Savings and revenue from discharging"
+  average:
+    description: "Average consumption"
 
 # ---- config ----
 config:
