@@ -38,6 +38,8 @@ charging_type:
     description: "Заряджання заблоковано"
   profit:
     description: "Заощадження та дохід від продажу під час розряджання"
+  average:
+    description: "Середнє споживання"
 
 # ---- config ----
 config:

@@ -38,6 +38,8 @@ charging_type:
     description: "Laden blockiert"
   profit:
     description: "Ersparnis und Verkaufserlös durch Entladung"
+  average:
+    description: "Durchschnittlicher Verbrauch"
 
 # ---- config ----
 config:

@@ -227,6 +227,10 @@ CHARGING_TYPES = {
     "profit": {
         "priority": 100,
         "emoji": "💰",
+    },
+    "average": {
+        "priority": 999,
+        "emoji": "⌛",
     }
 }
 
@@ -6824,9 +6828,9 @@ def charge_if_needed():
                 
         if powerwall_watt_flow != 0:
             if powerwall_watt_flow > 0 and CONFIG['home']['invert_powerwall_watt_flow_entity_id']:
-                charging_rule += f"\n{i18n.t('ui.charge_if_needed.charging_watt', watt=int(powerwall_watt_flow))}"
+                charging_rule += f"\n{i18n.t('ui.charge_if_needed.charging_watt', watt=int(powerwall_watt_flow))}{emoji_parse({'average': True})}"
             else:
-                charging_rule += f"\n{i18n.t('ui.charge_if_needed.discharging_watt', watt=int(powerwall_watt_flow))}"
+                charging_rule += f"\n{i18n.t('ui.charge_if_needed.discharging_watt', watt=int(powerwall_watt_flow))}{emoji_parse({'average': True})}"
                 
         set_charging_rule(charging_rule)
             
