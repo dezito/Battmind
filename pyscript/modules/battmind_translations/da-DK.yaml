@@ -12,6 +12,10 @@ charging_type:
     description: "Kritisk fejl, nødladning"
   no_rule:
     description: "Ladning uden grund"
+  cheapest_hour_fill_planner:
+    description: "Ladning i de billigste perioder"
+  most_expensive_planner:
+    description: "Prioriter ladning til de dyreste perioder"
   charging:
     description: "Ladning"
   discharging:

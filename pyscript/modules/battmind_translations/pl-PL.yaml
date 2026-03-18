@@ -12,6 +12,10 @@ charging_type:
     description: "Błąd krytyczny, ładowanie awaryjne"
   no_rule:
     description: "Ładowanie bez reguły"
+  cheapest_hour_fill_planner:
+    description: "Ładowanie w najtańszych okresach"
+  most_expensive_planner:
+    description: "Priorytet ładowania w najdroższych okresach"
   charging:
     description: "Ładowanie"
   discharging:

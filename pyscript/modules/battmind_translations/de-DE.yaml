@@ -12,6 +12,10 @@ charging_type:
     description: "Kritischer Fehler, Notladung"
   no_rule:
     description: "Laden ohne Regel"
+  cheapest_hour_fill_planner:
+    description: "Laden in den günstigsten Zeiträumen"
+  most_expensive_planner:
+    description: "Laden in den teuersten Zeiträumen priorisieren"
   charging:
     description: "Laden"
   discharging:

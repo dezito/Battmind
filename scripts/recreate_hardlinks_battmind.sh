@@ -71,8 +71,8 @@ fi
 echo -e "\n🔍 Scanning for additional pyscript modules containing BattMind TITLE..."
 MATCHED_FILES=$(grep -l 'TITLE = f"BattMind ({__name__}.py)"' "$CONFIG_PATH/pyscript"/*.py 2>/dev/null || true)
 
-# --- Remove ev.py from the list completely ---
-MATCHED_FILES=$(echo "$MATCHED_FILES" | grep -v '/ev.py$' || true)
+# --- Remove battmind.py from the list completely ---
+MATCHED_FILES=$(echo "$MATCHED_FILES" | grep -v '/battmind.py$' || true)
 
 if [ -z "$MATCHED_FILES" ]; then
   echo "ℹ️ No other BattMind pyscripts found with matching TITLE."
@@ -92,7 +92,7 @@ else
     fi
 
     # Create new hardlink
-    ln -f "$REPO_PATH/pyscript/ev.py" "$DST_FILE"
+    ln -f "$REPO_PATH/pyscript/battmind.py" "$DST_FILE"
     echo "🔗 Linked: $BASENAME"
   done
 fi
