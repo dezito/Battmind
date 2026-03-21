@@ -5062,7 +5062,6 @@ def cheap_grid_charge_hours():
             },
             "charging_sessions": {},
             "kwh_needed": 0.0,
-            "solar_prediction": [],
             "solar_kwh_prediction": [],
             "solar_cost_prediction": [],
             "solar_kwh_prediction_total": None,
