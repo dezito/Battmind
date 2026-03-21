@@ -12,6 +12,10 @@ charging_type:
     description: "Critical error, emergency charging"
   no_rule:
     description: "Charging without rule"
+  cheapest_hour_fill_planner:
+    description: "Charging during the cheapest periods"
+  most_expensive_planner:
+    description: "Prioritise charging for the most expensive periods"
   charging:
     description: "Charging"
   discharging:

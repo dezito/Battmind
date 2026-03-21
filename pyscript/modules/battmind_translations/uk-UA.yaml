@@ -12,6 +12,10 @@ charging_type:
     description: "Критична помилка, аварійне заряджання"
   no_rule:
     description: "Заряджання без правила"
+  cheapest_hour_fill_planner:
+    description: "Заряджання у найдешевші періоди"
+  most_expensive_planner:
+    description: "Пріоритет заряджання у найдорожчі періоди"
   charging:
     description: "Заряджання"
   discharging:
