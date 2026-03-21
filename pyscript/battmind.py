@@ -4715,15 +4715,16 @@ def cheap_grid_charge_hours():
                     total_grid_solar_kwh.append(charging_session['kWh'])
                     total_grid_cost_prediction.append(charging_session['Cost'])
             
-            if day == 0:
-                powerwall_kwh = percentage_to_kwh(get_battery_level(), include_charging_loss=True)
-                powerwall_kwh_price = battery_expenses.get("battery_level_expenses_unit", None)
-                
-                if not isinstance(powerwall_kwh_price, (int, float)):
-                    powerwall_kwh_price = get_powerwall_kwh_price()
-                _LOGGER.info(f"Adding powerwall kWh for day:{day} kWh:{powerwall_kwh} price:{powerwall_kwh_price}")
-                total_grid_solar_kwh.append(powerwall_kwh)
-                total_grid_cost_prediction.append(powerwall_kwh_price * powerwall_kwh)
+            battery_level = get_battery_level() if day == 0 else sum(charging_plan[day]['battery_level_end_of_day'])
+            powerwall_kwh = percentage_to_kwh(battery_level, include_charging_loss=True)
+            powerwall_kwh_price = battery_expenses.get("battery_level_expenses_unit", None)
+            
+            if not isinstance(powerwall_kwh_price, (int, float)):
+                powerwall_kwh_price = get_powerwall_kwh_price()
+            _LOGGER.info(f"Adding powerwall kWh for day:{day} kWh:{powerwall_kwh} price:{powerwall_kwh_price}")
+            total_grid_solar_kwh.append(powerwall_kwh)
+            total_grid_cost_prediction.append(powerwall_kwh_price * powerwall_kwh)
+            
             _LOGGER.warning(f"Total grid solar kWh prediction for day:{day}: {total_grid_solar_kwh} total grid cost prediction for day:{day}: {total_grid_cost_prediction}")
             battery_kwh_cost_raw = (sum(total_grid_cost_prediction)) / sum(total_grid_solar_kwh) if sum(total_grid_solar_kwh) > 0.0 else 0.0
             battery_loss_cost = calc_battery_loss_cost(battery_kwh_cost_raw)
