@@ -3805,6 +3805,13 @@ def get_charging_loss():
         global CHARGING_HISTORY_DB_TOTAL
         
         charged_kwh = CHARGING_HISTORY_DB_TOTAL.get("charged_kwh", 0.0)
+        
+        #Require at least 6 full charge cycles to calculate loss from history, to avoid inaccurate high loss percentage in the beginning when battery level expenses are calculated based on very little charged kWh
+        min_charged_kwh_threshold = CONFIG['solar']['powerwall_battery_size'] * 6
+        
+        if charged_kwh <= min_charged_kwh_threshold:
+            return loss
+        
         battery_level_kwh = percentage_to_kwh(get_battery_level(), include_charging_loss=False) - percentage_to_kwh(CONFIG['solar']['powerwall_battery_level_min'], include_charging_loss=False)
         discharged_kwh = CHARGING_HISTORY_DB_TOTAL.get("discharged_kwh", 0.0) + battery_level_kwh
         
