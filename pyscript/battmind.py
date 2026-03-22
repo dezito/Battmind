@@ -141,6 +141,7 @@ SOLAR_PRODUCTION_AVAILABLE_DB_VERSION = 2.0
 
 CHARGING_HISTORY_ENDING_BYTE_SIZE = None
 CHARGING_HISTORY_DB = {}
+CHARGING_HISTORY_DB_TOTAL = {}
 OVERVIEW_HISTORY = {}
 
 BATTERY_LEVEL_EXPENSES = {}
@@ -295,6 +296,7 @@ DEFAULT_CONFIG = {
         "powerwall_battery_level_min": 5.0,
         "powerwall_battery_level_max": 100.0,
         "powerwall_charge_discharge_loss": 0.1,
+        "use_charge_discharge_loss_from_history": True,
         "powerwall_wear_cost_per_kwh": 0.1,
     },
     "testing_mode": False
@@ -2941,7 +2943,7 @@ def save_charging_history():
 def charging_history_combine_and_set(get_ending_byte_size: bool = False):
     func_name = "charging_history_combine_and_set"
     _LOGGER = globals()["_LOGGER"].getChild(func_name)
-    global CHARGING_HISTORY_DB, CHARGING_HISTORY_ENDING_BYTE_SIZE
+    global CHARGING_HISTORY_DB, CHARGING_HISTORY_ENDING_BYTE_SIZE, CHARGING_HISTORY_DB_TOTAL
 
     # --- Combine-after (requested) ---
     combine_after = 10  # start combining only AFTER this many newest blocks
@@ -3324,7 +3326,7 @@ def charging_history_combine_and_set(get_ending_byte_size: bool = False):
     cc_tot = total["charged_cost"]["total"]
     dc_tot = total["discharged_cost"]["total"]
     sav_tot = total["savings"]["total"]
-
+    
     total_charge_price_unit = (cc_tot / ck_tot) if ck_tot > 0 else None
     total_charge_price_str = f"<br>({_fmt(total_charge_price_unit,2,'')})" if total_charge_price_unit is not None else ""
 
@@ -3337,6 +3339,11 @@ def charging_history_combine_and_set(get_ending_byte_size: bool = False):
     net_kwh = ck_tot - dk_tot
     net_cost = cc_tot - dc_tot
     
+    CHARGING_HISTORY_DB_TOTAL = {
+        "charged_kwh": ck_tot,
+        "discharged_kwh": dk_tot,
+        "balance_kwh": net_kwh,
+    }
     spacing_style = "display:inline-block; text-align:center;"
 
     col_charge = (
@@ -3573,7 +3580,7 @@ async def charging_history(timestamp=None, save_db = True):
         buy_price = get_hour_prices().get(start, None)
         sell_price = get_hour_prices(sell_prices = True).get(start, None)
         
-        powerwall_kwh_price = BATTERY_LEVEL_EXPENSES.get("battery_level_expenses_unit", None) if charge_kwh == 0.0 else None
+        powerwall_kwh_price = BATTERY_LEVEL_EXPENSES.get("unit", None) if charge_kwh == 0.0 else None
         
         if buy_price is None or sell_price is None:
             raise Exception(f"Buy or sell price not found for timestamp {start}. buy_price: {buy_price}, sell_price: {sell_price}")
@@ -3716,15 +3723,16 @@ def current_battery_level_expenses():
     global BATTERY_LEVEL_EXPENSES
     
     BATTERY_LEVEL_EXPENSES = {
-        "battery_level_expenses_kwh": 0.0,
-        "battery_level_expenses_percentage": 0.0,
-        "battery_level_expenses_solar_percentage": 0.0,
-        "battery_level_expenses_cost": 0.0,
-        "battery_level_expenses_unit": None,
-        "battery_level_expenses_cost_loss": 0.0,
-        "battery_level_expenses_cost_wear": 0.0,
-        "battery_level_expenses_cost_with_loss_and_wear": 0.0,
-        "battery_level_expenses_unit_with_loss_and_wear": None,
+        "kwh": 0.0,
+        "percentage": 0.0,
+        "solar_percentage": 0.0,
+        "cost": 0.0,
+        "unit": None,
+        "cost_loss": 0.0,
+        "cost_wear": 0.0,
+        "cost_with_loss_and_wear": 0.0,
+        "unit_with_loss_and_wear": None,
+        "loss_percentage": get_charging_loss()
     }
     
     try:
@@ -3732,7 +3740,7 @@ def current_battery_level_expenses():
         
         if CHARGING_HISTORY_DB:
             for key in dict(sorted(CHARGING_HISTORY_DB.items(), key=lambda item: item[0], reverse=True)).keys():
-                if round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_percentage"]) < round(current_battery_level):
+                if round(BATTERY_LEVEL_EXPENSES["percentage"]) < round(current_battery_level):
                     if (
                         "price" not in CHARGING_HISTORY_DB[key]['charged'] or
                         "cost" not in CHARGING_HISTORY_DB[key]['charged'] or
@@ -3753,7 +3761,7 @@ def current_battery_level_expenses():
                     cost_loss = calc_battery_loss_cost(cost)
                     total_cost = (cost + cost_loss) + abs(CONFIG['solar']['powerwall_wear_cost_per_kwh'])
                     
-                    new_battery_level = percentage + BATTERY_LEVEL_EXPENSES["battery_level_expenses_percentage"]
+                    new_battery_level = percentage + BATTERY_LEVEL_EXPENSES["percentage"]
                     
                     if new_battery_level > current_battery_level and percentage > 0.0:
                         diff = (percentage - (new_battery_level - current_battery_level)) / percentage
@@ -3766,33 +3774,45 @@ def current_battery_level_expenses():
                         
                     BATTERY_LEVEL_EXPENSES[key] = CHARGING_HISTORY_DB[key]['charged']
                     
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_kwh"] += kwh
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_percentage"] += percentage
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_solar_percentage"] += solar_percentage
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost"] += cost
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost_loss"] += cost_loss
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost_wear"] += abs(CONFIG['solar']['powerwall_wear_cost_per_kwh']) * kwh
-                    BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost_with_loss_and_wear"] += total_cost
+                    BATTERY_LEVEL_EXPENSES["kwh"] += kwh
+                    BATTERY_LEVEL_EXPENSES["percentage"] += percentage
+                    BATTERY_LEVEL_EXPENSES["solar_percentage"] += solar_percentage
+                    BATTERY_LEVEL_EXPENSES["cost"] += cost
+                    BATTERY_LEVEL_EXPENSES["cost_loss"] += cost_loss
+                    BATTERY_LEVEL_EXPENSES["cost_wear"] += abs(CONFIG['solar']['powerwall_wear_cost_per_kwh']) * kwh
+                    BATTERY_LEVEL_EXPENSES["cost_with_loss_and_wear"] += total_cost
                 else:
                     break
                 
-            BATTERY_LEVEL_EXPENSES["battery_level_expenses_kwh"] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_kwh"], 3)
-            BATTERY_LEVEL_EXPENSES["battery_level_expenses_percentage"] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_percentage"], 1)
-            BATTERY_LEVEL_EXPENSES["battery_level_expenses_solar_percentage"] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_solar_percentage"], 1)
-            BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost"] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost"], 3)
-            BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost_with_loss_and_wear"] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost_with_loss_and_wear"], 3)
+            BATTERY_LEVEL_EXPENSES["kwh"] = round(BATTERY_LEVEL_EXPENSES["kwh"], 3)
+            BATTERY_LEVEL_EXPENSES["percentage"] = round(BATTERY_LEVEL_EXPENSES["percentage"], 1)
+            BATTERY_LEVEL_EXPENSES["solar_percentage"] = round(BATTERY_LEVEL_EXPENSES["solar_percentage"], 1)
+            BATTERY_LEVEL_EXPENSES["cost"] = round(BATTERY_LEVEL_EXPENSES["cost"], 3)
+            BATTERY_LEVEL_EXPENSES["cost_with_loss_and_wear"] = round(BATTERY_LEVEL_EXPENSES["cost_with_loss_and_wear"], 3)
             
-            if BATTERY_LEVEL_EXPENSES["battery_level_expenses_kwh"] > 0.0:
-                BATTERY_LEVEL_EXPENSES['battery_level_expenses_unit'] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost"] / BATTERY_LEVEL_EXPENSES["battery_level_expenses_kwh"], 3)
-                BATTERY_LEVEL_EXPENSES['battery_level_expenses_unit_with_loss_and_wear'] = round(BATTERY_LEVEL_EXPENSES["battery_level_expenses_cost_with_loss_and_wear"] / BATTERY_LEVEL_EXPENSES["battery_level_expenses_kwh"], 3)
+            if BATTERY_LEVEL_EXPENSES["kwh"] > 0.0:
+                BATTERY_LEVEL_EXPENSES['unit'] = round(BATTERY_LEVEL_EXPENSES["cost"] / BATTERY_LEVEL_EXPENSES["kwh"], 3)
+                BATTERY_LEVEL_EXPENSES['unit_with_loss_and_wear'] = round(BATTERY_LEVEL_EXPENSES["cost_with_loss_and_wear"] / BATTERY_LEVEL_EXPENSES["kwh"], 3)
 
     except Exception as e:
         _LOGGER.warning(f"Error in battery level cost calculation: {e} {type(e)}")
 
     return BATTERY_LEVEL_EXPENSES
 
+def get_charging_loss():
+    loss = CONFIG['solar']['powerwall_charge_discharge_loss']
+    if CONFIG['solar']['use_charge_discharge_loss_from_history']:
+        global CHARGING_HISTORY_DB_TOTAL
+        
+        charged_kwh = CHARGING_HISTORY_DB_TOTAL.get("charged_kwh", 0.0)
+        battery_level_kwh = percentage_to_kwh(get_battery_level(), include_charging_loss=False)
+        discharged_kwh = CHARGING_HISTORY_DB_TOTAL.get("discharged_kwh", 0.0) + battery_level_kwh
+        
+        loss = 1-(discharged_kwh/charged_kwh) if charged_kwh > 0.0 else loss
+    return loss
+
 def calc_battery_loss_cost(price):
-    return price * abs(CONFIG['solar']['powerwall_charge_discharge_loss'])
+    return price * abs(get_charging_loss())
 
 def update_grid_prices():
     func_name = "update_grid_prices"
@@ -4360,8 +4380,9 @@ def cheap_grid_charge_hours():
                 
                 
                 for timestamp, price in hour_prices.items():
-                    if not in_between(timestamp, charging_plan[day]["start_of_day"], charging_plan[day]["end_of_day"]):
+                    if not in_between(timestamp, charging_plan[max(day - 1, 0)]["start_of_day"], charging_plan[day]["end_of_day"]):
                         continue
+                    
                     day_prices[timestamp] = price
                 
                 for i in range(get_cheap_price_periods()):
@@ -4559,7 +4580,10 @@ def cheap_grid_charge_hours():
                     remove_list = []
                     
                     for timestamp, price in sorted_by_cheapest_price:
-                        if sorted_timestamp.date() != timestamp.date():
+                        """if sorted_timestamp.date() != timestamp.date():
+                            continue"""
+                        
+                        if hoursBetween(sorted_timestamp, timestamp) > 24:
                             continue
                         
                         if not in_between(timestamp, current_hour, sorted_timestamp):
@@ -4717,7 +4741,7 @@ def cheap_grid_charge_hours():
             
             battery_level = get_battery_level() if day == 0 else sum(charging_plan[day]['battery_level_end_of_day'])
             powerwall_kwh = percentage_to_kwh(battery_level, include_charging_loss=True)
-            powerwall_kwh_price = battery_expenses.get("battery_level_expenses_unit", None)
+            powerwall_kwh_price = battery_expenses.get("unit", None)
             
             if not isinstance(powerwall_kwh_price, (int, float)):
                 powerwall_kwh_price = get_powerwall_kwh_price()
@@ -5400,18 +5424,18 @@ def cheap_grid_charge_hours():
     overview = []
     
     try:
-        percentage = round(battery_expenses.get("battery_level_expenses_percentage", 0.0), 0)
-        solar_percentage = round(battery_expenses.get("battery_level_expenses_solar_percentage", 0.0), 0)
-        kwh = round(battery_expenses.get("battery_level_expenses_kwh", 0.0), 1)
-        solar_kwh = round(percentage_to_kwh(battery_expenses.get("battery_level_expenses_solar_percentage", 0.0)), 1)
-        cost_loss = round(battery_expenses.get('battery_level_expenses_cost_loss', 0.0), 2)
-        cost_wear = round(battery_expenses.get('battery_level_expenses_cost_wear', 0.0), 2)
-        cost = round(battery_expenses.get("battery_level_expenses_cost", 0.0), 2)
-        unit = round(battery_expenses.get('battery_level_expenses_unit', 0.0), 2)
-        unit_percentage = round(kwh_to_percentage(percentage_to_kwh(battery_expenses.get('battery_level_expenses_unit', 0.0))), 2)
-        cost_with_loss = round(battery_expenses.get("battery_level_expenses_cost_with_loss_and_wear", 0.0), 2)
-        unit_with_loss = round(battery_expenses.get('battery_level_expenses_unit_with_loss_and_wear', 0.0), 2)
-        unit_percentage_with_loss = round(kwh_to_percentage(percentage_to_kwh(battery_expenses.get('battery_level_expenses_unit_with_loss_and_wear', 0.0)), include_charging_loss=True), 2)
+        percentage = round(battery_expenses.get("percentage", 0.0), 0)
+        solar_percentage = round(battery_expenses.get("solar_percentage", 0.0), 0)
+        kwh = round(battery_expenses.get("kwh", 0.0), 1)
+        solar_kwh = round(percentage_to_kwh(battery_expenses.get("solar_percentage", 0.0)), 1)
+        cost_loss = round(battery_expenses.get('cost_loss', 0.0), 2)
+        cost_wear = round(battery_expenses.get('cost_wear', 0.0), 2)
+        cost = round(battery_expenses.get("cost", 0.0), 2)
+        unit = round(battery_expenses.get('unit', 0.0), 2)
+        unit_percentage = round(kwh_to_percentage(percentage_to_kwh(battery_expenses.get('unit', 0.0))), 2)
+        cost_with_loss = round(battery_expenses.get("cost_with_loss_and_wear", 0.0), 2)
+        unit_with_loss = round(battery_expenses.get('unit_with_loss_and_wear', 0.0), 2)
+        unit_percentage_with_loss = round(kwh_to_percentage(percentage_to_kwh(battery_expenses.get('unit_with_loss_and_wear', 0.0)), include_charging_loss=True), 2)
         
         unit_valuta_kwh_with_loss_text = f"**{unit_with_loss:.2f} {i18n.t('ui.common.valuta_kwh')}**"
         unit_valuta_percentage_with_loss_text = f"<br>**{unit_percentage_with_loss:.2f} {i18n.t('ui.common.valuta_percentage')}**" if unit_with_loss != unit_percentage_with_loss else ""
@@ -5421,6 +5445,8 @@ def cheap_grid_charge_hours():
         
         cost_loss_kwh = round(cost_loss / kwh, 2) if kwh else 0.0
         cost_wear_kwh = round(cost_wear / kwh, 2) if kwh else 0.0
+        
+        loss_percentage = battery_expenses.get('loss_percentage', 0.0) * 100
         
         
         if kwh > 0.0:
@@ -5434,7 +5460,7 @@ def cheap_grid_charge_hours():
                 overview.append(f"| **☀️ {i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.solar_share')}** | **{solar_percentage:.0f}% {solar_kwh:.1f} kWh** |")
 
             overview.append(f"| **💰 {i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.expense')}** | **{cost_with_loss:.2f} {i18n.t('ui.common.valuta')}**<br>(**{cost:.2f} {i18n.t('ui.common.valuta')}**) |")
-            overview.append(f"| **📊 {i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.estimated_loss')}** | **{cost_loss:.2f} {i18n.t('ui.common.valuta')}**<br>(**{cost_loss_kwh:.2f} {i18n.t('ui.common.valuta_kwh')}**) |")
+            overview.append(f"| **📊 {i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.estimated_loss')}**<br>({i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.charging_loss')} {loss_percentage:.1f}%) | **{cost_loss:.2f} {i18n.t('ui.common.valuta')}**<br>(**{cost_loss_kwh:.2f} {i18n.t('ui.common.valuta_kwh')}**) |")
             overview.append(f"| **🛠️ {i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.estimated_wear_cost')}** | **{cost_wear:.2f} {i18n.t('ui.common.valuta')}**<br>(**{cost_wear_kwh:.2f} {i18n.t('ui.common.valuta_kwh')}**) |")
             overview.append(f"| **🧮 {i18n.t('ui.cheap_grid_charge_hours.battery_level_expenses.unit_price')}** | {unit_valuta_kwh_with_loss_text}{unit_valuta_percentage_with_loss_text}{unit_valuta_kwh_text}{unit_valuta_percentage_text} |")
             overview.append("</center>\n")
