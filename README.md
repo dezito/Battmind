@@ -13,6 +13,7 @@ Styring af husbatteri
     - [Optimimere Home Assistant Database](https://smarthomescene.com/guides/optimize-your-home-assistant-database/)
   - pga. fejl i homeassistant.components.recorder.history bibliotek
 ### Påkrævet integrationer
+- [Cable Juice Planner](https://github.com/dezito/Cable-Juice-Planner) bibliotek mappen (midlertidigt)
 - [HACS](https://github.com/hacs/integration)
 - [PyScript](https://github.com/custom-components/pyscript)
   - Allow All Imports - Aktiveret
