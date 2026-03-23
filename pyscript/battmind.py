@@ -4511,10 +4511,14 @@ def cheap_grid_charge_hours():
                             kwh_needed, totalCost, totalkWh, battery_level_added, cost_added = add_to_charge_hours(kwh_needed, totalCost, totalkWh, timestamp, price, kwh_available, highest_battery_level, rules=["cheapest_hour_fill_planner"])
                             
                             if timestamp in chargeHours and battery_level_added:
+                                other_day = ""
+                                if what_day != day:
+                                    other_day = f"<br><center>**({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})**</center>"
+                                
                                 _LOGGER.info(f"Day:{day} Added charging at hour:{timestamp} battery_level_added:{battery_level_added:.1f}% cost_added:{cost_added:.2f} valuta total_cost before:{charging_plan[day]['total_cost']:.2f}")
                                 charging_plan[day]['total_cost'] += cost_added
                                 reason = (
-                                    f"<details><summary>{emoji_parse({'charging': True})}Billigste timer ({price}/{battery_level_added:.0f}%)</summary>"
+                                    f"<details><summary>{emoji_parse({'charging': True})}Billigste timer ({price}/{battery_level_added:.0f}%){other_day}</summary>"
                                     f"Højeste batteriniveau tidspunkt: **{highest_battery_level_timestamp.strftime('%H:%M')}**<br>"
                                     f"Højeste batteriniveau: **{highest_battery_level:.1f}%**<br>"
                                     f"Aktuel elpris: **{price}** valuta/kWh<br>"
@@ -4649,11 +4653,15 @@ def cheap_grid_charge_hours():
                             sorted_kwh_needed, totalCost, totalkWh, battery_level_added, cost_added = add_to_charge_hours(kwh_needed, totalCost, totalkWh, timestamp, price, kwh_available, highest_battery_level, rules=[f"most_expensive_planner"])
                             
                             if timestamp in chargeHours and battery_level_added:
+                                other_day = ""
+                                if what_day != day:
+                                    other_day = f"<br><center>**({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})**</center>"
+                                    
                                 _LOGGER.info(f"day:{day} kwh_profit:{kwh_profit} = sorted_price:{sorted_price} - (calc_battery_loss_cost({price}):{calc_battery_loss_cost(price)} + {abs(CONFIG['solar']['powerwall_wear_cost_per_kwh'])})")
                                 
                                 charging_plan[day]['total_cost'] += cost_added
                                 reason = (
-                                    f"<details><summary>{emoji_parse({'charging': True})}Dyreste timer ({price}/{battery_level_added:.0f}%)</summary>"
+                                    f"<details><summary>{emoji_parse({'charging': True})}Dyreste timer ({price}/{battery_level_added:.0f}%){other_day}</summary>"
                                     f"Prioriteret time: **{sorted_timestamp}**<br>"
                                     f"Prioriteret batteriniveau: **{sorted_battery_level:.1f}%**<br>"
                                     f"Prioriteret elpris: **{sorted_price}** valuta/kWh<br>"
@@ -5641,11 +5649,11 @@ def cheap_grid_charge_hours():
                 continue
         
             dict_timestamps_joined = {}
-            dict_timestamps_joined.update(charging_plan[day]['charging_sessions'])
-            dict_timestamps_joined.update(charging_plan[day]['force_discharge_timestamps'])
             dict_timestamps_joined.update(charging_plan[day]['blocked_discharge_timestamps'])
+            dict_timestamps_joined.update(charging_plan[day]['force_discharge_timestamps'])
+            dict_timestamps_joined.update(charging_plan[day]['charging_sessions'])
             
-            overview.append(f"#### 🔎 Day {day}\n")
+            overview.append(f"#### 🔎 Day {day} ({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})\n")
             if len(charging_plan[day]['charging_sessions']) == 0:
                 overview.append(f"{i18n.t('ui.cheap_grid_charge_hours.no_charging_sessions')}<br>\n")
                     
