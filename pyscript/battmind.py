@@ -4389,7 +4389,7 @@ def cheap_grid_charge_hours():
                 for timestamp, price in hour_prices.items():
                     from_timestamp = charging_plan[day]["start_of_day"] - datetime.timedelta(hours=6) if day > 0 else charging_plan[day]["start_of_day"]
                     to_timestamp = charging_plan[day]["end_of_day"]
-                    if not in_between(timestamp, from_timestamp, to_timestamp):
+                    if not in_between(timestamp, from_timestamp, to_timestamp) or timestamp < current_hour:
                         continue
                     
                     day_prices[timestamp] = price
@@ -4595,7 +4595,7 @@ def cheap_grid_charge_hours():
                     for timestamp, price in sorted_by_cheapest_price:
                         from_timestamp = charging_plan[day]["start_of_day"] - datetime.timedelta(hours=6) if day > 0 else charging_plan[day]["start_of_day"]
                         to_timestamp = charging_plan[day]["end_of_day"]
-                        if not in_between(timestamp, from_timestamp, to_timestamp):
+                        if not in_between(timestamp, from_timestamp, to_timestamp) or timestamp < current_hour:
                             continue
                         
                         kwh_profit = sorted_price - (price + calc_battery_loss_cost(price) + abs(CONFIG['solar']['powerwall_wear_cost_per_kwh']))
