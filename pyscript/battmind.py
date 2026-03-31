@@ -4929,7 +4929,7 @@ def cheap_grid_charge_hours():
                 min_profit_per_kwh = get_min_profit_per_kwh() if only_discharge_on_profit_enabled() else 0.0
                 
                 if kwh_profit < min_profit_per_kwh:
-                    _LOGGER.warning(f"Day:{day} {timestamp} Not selling excess kWh due to kwh_profit:{kwh_profit} < {min_profit_per_kwh}")
+                    _LOGGER.warning(f"Day:{day} Skipping selling excess kWh at timestamp:{timestamp} due to low profit per kWh:{kwh_profit:.2f} which is less than min_profit_per_kwh:{min_profit_per_kwh:.2f} (price:{price:.2f} - battery_kwh_cost:{battery_kwh_cost:.2f})")
                     continue
                 _LOGGER.info(f"Day:{day} Selling excess kWh at timestamp:{timestamp} price:{price} battery_kwh_cost:{battery_kwh_cost} profit per kWh:{kwh_profit} excess_kwh_available_current_hour:{excess_kwh_available_current_hour} excess_profit:{excess_profit} excess_kwh_available before selling:{excess_kwh_available}kWh")
                 excess_kwh_available -= excess_kwh_available_current_hour
