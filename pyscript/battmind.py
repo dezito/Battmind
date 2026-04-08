@@ -201,6 +201,10 @@ CHARGING_TYPES = {
         "priority": 3.1,
         "emoji": "🔥",
     },
+    "needed_before_max_level_planner": {
+        "priority": 3.2,
+        "emoji": "🩹",
+    },
     "charging": {
         "priority": 4,
         "emoji": "📈",
@@ -312,12 +316,29 @@ DEFAULT_ENTITIES = {
     "homeassistant": {
         "customize": {
             f"input_select.battmind_select_release": {},
+            f"input_select.{__name__}_consumption_forecast_type": {},
+            
             f"input_button.{__name__}_enforce_planning": {},
             f"input_button.{__name__}_restart_script": {},
+            
             f"input_boolean.{__name__}_debug_log": {},
             f"input_boolean.{__name__}_deactivate_script": {},
+            f"input_boolean.{__name__}_solar_charging": {},
+            f"input_boolean.{__name__}_cheapest_hour_fill_planner": {},
+            f"input_boolean.{__name__}_most_expensive_planner": {},
+            f"input_boolean.{__name__}_needed_before_max_level_planner": {},
+            f"input_boolean.{__name__}_only_discharge_on_profit": {},
+            f"input_boolean.{__name__}_prioritize_discharge_hours_by_energy_cost": {},
+            f"input_boolean.{__name__}_sell_excess_kwh_available": {},
+            
             f"input_number.{__name__}_kwh_charged_by_solar": {},
             f"input_number.{__name__}_solar_sell_fixed_price": {},
+            f"input_number.{__name__}_cheap_price_periods": {},
+            f"input_number.{__name__}_cheapest_price_rise_threshold": {},
+            f"input_number.{__name__}_cheap_price_period_rise_threshold": {},
+            f"input_number.{__name__}_min_profit_per_kwh": {},
+            
+            f"input_text.{__name__}_exclude_sell_hours": {},
         },
     },
     "input_select":{
@@ -359,6 +380,10 @@ DEFAULT_ENTITIES = {
         f"{__name__}_most_expensive_planner":{
             "icon": "mdi:chart-bar"
         },
+        f"{__name__}_needed_before_max_level_planner":{
+            "icon": "mdi:chart-bell-curve"
+        },
+
         f"{__name__}_only_discharge_on_profit":{
             "icon": "mdi:cash-plus"
         },
@@ -2597,6 +2622,10 @@ def most_expensive_planner_enabled():
     if get_state(f"input_boolean.{__name__}_most_expensive_planner") == "on":
         return True
     
+def needed_before_max_level_planner_enabled():
+    if get_state(f"input_boolean.{__name__}_needed_before_max_level_planner") == "on":
+        return True
+    
 def only_discharge_on_profit_enabled():
     if get_state(f"input_boolean.{__name__}_only_discharge_on_profit") == "on":
         return True
@@ -4705,6 +4734,100 @@ def cheap_grid_charge_hours():
             for line in lines:
                 _LOGGER.error(line)
 
+        def needed_before_max_level_planner(day):
+            nonlocal func_name, sub_func_name
+            sub_sub_func_name = "needed_before_max_level_planner"
+            _LOGGER = globals()['_LOGGER'].getChild(f"{func_name}.{sub_func_name}.{sub_sub_func_name}")
+            
+            nonlocal totalCost, totalkWh, charging_plan, chargeHours
+            
+            _LOGGER.warning(f"---------------------------------{day} needed_before_max_level_planner {charging_plan[day]['day_text']} {day}---------------------------------")
+            
+            
+            highest_battery_level = get_battery_level() if day == 0 else sum(charging_plan[day]['battery_level_start_of_day'])
+            highest_battery_level_timestamp = current_hour if day == 0 else charging_plan[day]['start_of_day']
+            
+            from_hour = getHour() if day == 0 else 0
+            
+            for hour in range(from_hour, 24):
+                battery_level = sum(charging_plan[day]['battery_level_flow'].get(hour, [0.0]))
+                if battery_level > highest_battery_level:
+                    highest_battery_level = battery_level
+                    highest_battery_level_timestamp = highest_battery_level_timestamp.replace(hour=hour)
+
+            highest_battery_level_timestamp = current_hour if day == 0 else charging_plan[day]['end_of_day']
+            _LOGGER.error(f"Highest battery level before max level planner for day:{day} is {highest_battery_level:.1f}% at hour:{highest_battery_level_timestamp.hour}")
+            for hour in range(from_hour, highest_battery_level_timestamp.hour + 1):
+                battery_level = sum(charging_plan[day]['battery_level_flow'].get(hour, [0.0])) - CONFIG['solar']['powerwall_battery_level_min']
+                kwh_needed = kwh_needed_for_charging(charging_plan[day]['hour_cost_prediction'][FORECAST_TYPE][hour]['percentage'], battery_level)
+                
+                if kwh_needed <= 0.0:
+                    continue
+                
+                needed_timestamp = charging_plan[day]["start_of_day"].replace(hour=hour)
+                needed_price = hour_prices.get(needed_timestamp, None)
+                
+                _LOGGER.info(f"Hour:{hour} battery_level:{battery_level:.1f}% kwh_needed:{kwh_needed:.2f}kWh")
+                
+                finished = False
+                
+                for _ in range(int(round_up(kwh_needed / MAX_KWH_CHARGING) + 1)):
+                    if finished:
+                        break
+                    
+                    for timestamp, price in sorted_by_cheapest_price:
+                        from_timestamp = charging_plan[day]["start_of_day"] - datetime.timedelta(hours=6) if day > 0 else charging_plan[day]["start_of_day"]
+                        to_timestamp = charging_plan[day]["end_of_day"]
+                        if not in_between(timestamp, from_timestamp, to_timestamp) or timestamp < current_hour:
+                            continue
+                        
+                        """if not in_between(timestamp, max(current_hour, charging_plan[day]["start_of_day"]), timestamp + datetime.timedelta(hours=1)) or timestamp < current_hour:
+                            _LOGGER.warning(f"Timestamp {timestamp} is not between {max(current_hour, charging_plan[day]['start_of_day'])} and {timestamp + datetime.timedelta(hours=1)} or is before current_hour {current_hour}, skipping")
+                            continue"""
+                        
+                        kwh_profit = needed_price - (price + calc_battery_loss_cost(price) + abs(CONFIG['solar']['powerwall_wear_cost_per_kwh']))
+                        min_profit_per_kwh = get_min_profit_per_kwh() if only_discharge_on_profit_enabled() else 0.0
+                        
+                        if kwh_profit < min_profit_per_kwh:
+                            continue
+                        
+                        hour_in_chargeHours, kwh_available = kwh_available_in_hour(timestamp)
+                        if hour_in_chargeHours and kwh_available <= 0.0:
+                            _LOGGER.warning(f"Hour {timestamp} is in chargeHours but no kWh available, skipping")
+                            continue
+                                        
+                        what_day = daysBetween(current_hour, timestamp)
+                        if what_day < day - 1:
+                            _LOGGER.warning(f"Timestamp {timestamp} is for day {what_day} which is less than day - 1 ({day - 1}), skipping")
+                            continue
+                        
+                        battery_level_id = "battery_level_start_of_day" if what_day < 0 else "battery_level_end_of_day"
+                        
+                        if round(kwh_needed, 1) > 0.0 and kwh_to_percentage(kwh_needed, include_charging_loss = True) > 0.0:
+                            charging_plan[what_day]['rules'].append(timestamp.strftime('%d%H'))
+                            kwh_needed, totalCost, totalkWh, battery_level_added, cost_added = add_to_charge_hours(kwh_needed, totalCost, totalkWh, timestamp, price, kwh_available, highest_battery_level, rules=["needed_before_max_level_planner"])
+                            
+                            if timestamp in chargeHours and battery_level_added:
+                                other_day = ""
+                                if what_day != day:
+                                    other_day = f"<br><center>**({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})**</center>"
+                                
+                                _LOGGER.info(f"Day:{day} Added charging at hour:{timestamp} battery_level_added:{battery_level_added:.1f}% cost_added:{cost_added:.2f} valuta total_cost before:{charging_plan[day]['total_cost']:.2f}")
+                                charging_plan[day]['total_cost'] += cost_added
+                                reason = (
+                                    f"<details><summary>{emoji_parse({'needed_before_max_level_planner': True})}Brug for ({price}/{battery_level_added:.0f}%){other_day}</summary>"
+                                    f"Højeste batteriniveau tidspunkt: **{highest_battery_level_timestamp.strftime('%H:%M')}**<br>"
+                                    f"Højeste batteriniveau: **{highest_battery_level:.1f}%**<br>"
+                                    f"Aktuel elpris: **{price}** valuta/kWh<br>"
+                                    f"Batteriniveau tilføjet: **{battery_level_added:.2f}%**<br>"
+                                    "</details>"
+                                    )
+                                add_charging_session_to_day(timestamp, what_day, battery_level_id, reason = reason)
+                                add_charging_to_days(timestamp, highest_battery_level_timestamp, battery_level_added)
+                    else:
+                        finished = True
+            
+        
         def discharge_amount(day):
             nonlocal func_name, sub_func_name
             sub_sub_func_name = "discharge_amount"
@@ -4888,9 +5011,9 @@ def cheap_grid_charge_hours():
                     prioritized_hours.append(hour)
                     prioritized_kwh.append(kwh_needed)
                 
-        def sell_excess_kwh(day):
+        def sell_excess_kwh_available(day):
             nonlocal func_name, sub_func_name
-            sub_sub_func_name = "sell_excess_kwh"
+            sub_sub_func_name = "sell_excess_kwh_available"
             _LOGGER = globals()['_LOGGER'].getChild(f"{func_name}.{sub_func_name}.{sub_sub_func_name}")
             
             nonlocal charging_plan, grid_prices, grid_sell_prices
@@ -4990,6 +5113,31 @@ def cheap_grid_charge_hours():
                 "enabled_func": most_expensive_planner_enabled(),
                 "func": most_expensive_planner
             },
+            3: {
+                "name": "needed_before_max_level_planner",
+                "enabled_func": needed_before_max_level_planner_enabled(),
+                "func": needed_before_max_level_planner
+            },
+            4: {
+                "name": "only_discharge_on_profit",
+                "enabled_func": only_discharge_on_profit_enabled(),
+                "func": only_discharge_on_profit
+            },
+            5: {
+                "name": "prioritize_discharge_hours_by_energy_cost",
+                "enabled_func": prioritize_discharge_hours_by_energy_cost_enabled(),
+                "func": prioritize_discharge_hours_by_energy_cost
+            },
+            6: {
+                "name": "sell_excess_kwh_available",
+                "enabled_func": sell_excess_kwh_available_enabled(),
+                "func": sell_excess_kwh_available
+            },
+            7: {
+                "name": "most_expensive_planner",
+                "enabled_func": most_expensive_planner_enabled(),
+                "func": most_expensive_planner
+            },
         }
         
         for day in sorted([key for key in charging_plan.keys() if isinstance(key, int)]):
@@ -5000,27 +5148,6 @@ def cheap_grid_charge_hours():
                 TASKS[f"{func_prefix}{charging_rules[rule_priority]['name']}_{day}"] = task.create(charging_rules[rule_priority]['func'], day)
                 done, pending = task.wait({TASKS[f"{func_prefix}{charging_rules[rule_priority]['name']}_{day}"]})
                 
-            TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"] = task.create(battery_level_flow_prediction_recalc)
-            done, pending = task.wait({TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"]})
-    
-            if only_discharge_on_profit_enabled():
-                TASKS[f"{func_prefix}only_discharge_on_profit_{day}"] = task.create(only_discharge_on_profit, day)
-                done, pending = task.wait({TASKS[f"{func_prefix}only_discharge_on_profit_{day}"]})
-                
-                TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"] = task.create(battery_level_flow_prediction_recalc)
-                done, pending = task.wait({TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"]})
-                
-            if prioritize_discharge_hours_by_energy_cost_enabled():
-                TASKS[f"{func_prefix}prioritize_discharge_hours_by_energy_cost_{day}"] = task.create(prioritize_discharge_hours_by_energy_cost, day)
-                done, pending = task.wait({TASKS[f"{func_prefix}prioritize_discharge_hours_by_energy_cost_{day}"]})
-            
-                TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"] = task.create(battery_level_flow_prediction_recalc)
-                done, pending = task.wait({TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"]})
-                
-            if sell_excess_kwh_available_enabled():
-                TASKS[f"{func_prefix}sell_excess_kwh_{day}"] = task.create(sell_excess_kwh, day)
-                done, pending = task.wait({TASKS[f"{func_prefix}sell_excess_kwh_{day}"]})
-            
                 TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"] = task.create(battery_level_flow_prediction_recalc)
                 done, pending = task.wait({TASKS[f"{func_prefix}battery_level_flow_prediction_recalc_{day}"]})
                         

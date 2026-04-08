@@ -16,6 +16,8 @@ charging_type:
     description: "Ladning i de billigste perioder"
   most_expensive_planner:
     description: "Prioriter ladning til de dyreste perioder"
+  needed_before_max_level_planner:
+    description: "Ladning i nødvendige perioder inden max batteriniveau nås"
   charging:
     description: "Ladning"
   discharging:
@@ -126,6 +128,9 @@ entity:
     debug_log:
       name: "{name}.py debug log"
       description: "{name}.py debug log"
+    solar_charging:
+      name: "Solcelleoverskud til opladning"
+      description: "Aktiver denne for at bruge solcelleoverskud til opladning"
     deactivate_script:
       name: "Deaktiver scriptet"
       description: "Deaktiver scriptet, laderen og bilen styres ikke mere"
@@ -135,6 +140,9 @@ entity:
     most_expensive_planner:
       name: "Ladning: Dyreste perioder planlægger"
       description: "Aktiver denne for at lade til de dyreste perioder, for at maksimere refusion"
+    needed_before_max_level_planner:
+      name: "Ladning: Nødvendig før max niveau planlægger"
+      description: "Aktiver denne for at lade i nødvendige perioder inden max batteriniveau nås"
     only_discharge_on_profit:
       name: "Afladning: Kun ved profit"
       description: "Aktiver denne for kun at aflade når det er profitabelt"

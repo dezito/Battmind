@@ -16,6 +16,8 @@ charging_type:
     description: "Заряджання у найдешевші періоди"
   most_expensive_planner:
     description: "Пріоритет заряджання у найдорожчі періоди"
+  needed_before_max_level_planner:
+    description: "Заряджання у необхідні періоди до досягнення максимального рівня батареї"
   charging:
     description: "Заряджання"
   discharging:
@@ -123,25 +125,27 @@ entity:
     debug_log:
       name: "{name}.py журнал налагодження"
       description: "{name}.py журнал налагодження"
+    solar_charging:
+      name: "Заряджання надлишком сонця"
+      description: "Використовувати надлишок; тижневе планування за прогнозом"
     deactivate_script:
       name: "Деактивувати скрипт"
       description: "Скрипт вимкнено – зарядний пристрій і авто більше не керуються"
     cheapest_hour_fill_planner:
       name: "Заряджання: Найдешевші періоди"
       description: "Увімкніть для заряджання в найдешевші періоди"
-
     most_expensive_planner:
       name: "Заряджання: Найдорожчі періоди"
       description: "Увімкніть для заряджання в найдорожчі періоди для максимізації компенсації"
-
+    needed_before_max_level_planner:
+      name: "Заряджання: Планування перед досягненням максимального рівня"
+      description: "Увімкніть, щоб заряджати у необхідні періоди до досягнення максимального рівня батареї"
     only_discharge_on_profit:
       name: "Розряджання: Лише при прибутку"
       description: "Увімкніть, щоб розряджати лише коли це прибутково"
-
     prioritize_discharge_hours_by_energy_cost:
       name: "Розряджання: Пріоритет за вартістю енергії"
       description: "Увімкніть, щоб пріоритезувати години розряджання за вартістю енергії, а не за ціною"
-
     sell_excess_kwh_available:
       name: "Розряджання: Продати надлишкові кВт·год"
       description: "Увімкніть, щоб продавати надлишкову енергію в мережу в найдорожчі години"
