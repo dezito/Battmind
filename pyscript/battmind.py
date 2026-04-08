@@ -248,6 +248,7 @@ DEFAULT_CONFIG = {
     "database": {
         "power_values_db_data_to_save": 15,
         "solar_available_db_data_to_save": 10,
+        "kwh_avg_prices_db_data_to_save": 15,
         "charging_history_db_data_to_save": 12
     },
     "first_run": True,
