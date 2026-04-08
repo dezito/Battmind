@@ -7591,28 +7591,6 @@ if INITIALIZATION_COMPLETE:
             )
         finally:
             task_cancel(func_prefix, task_remove=True, startswith=True)
-        
-    @time_trigger(f"cron(0 5 * * *)")
-    def cron_append_kwh_prices(trigger_type=None, var_name=None, value=None, old_value=None):
-        func_name = "cron_append_kwh_prices"
-        func_prefix = f"{func_name}_"
-        _LOGGER = globals()['_LOGGER'].getChild(func_name)
-        global TASKS
-        
-        try:
-            TASKS[f"{func_prefix}append_kwh_prices"] = task.create(append_kwh_prices)
-            done, pending = task.wait({TASKS[f"{func_prefix}append_kwh_prices"]})
-        except (asyncio.CancelledError, asyncio.TimeoutError, KeyError) as e:
-            _LOGGER.warning(f"Task was cancelled or timed out in {func_name}: {e} {type(e)}")
-        except Exception as e:
-            _LOGGER.error(f"Error in {func_name}: {e} {type(e)}")
-            my_persistent_notification(
-                f"Error in {func_name}: {e} {type(e)}",
-                title=f"{TITLE} error",
-                persistent_notification_id=f"{__name__}_{func_name}_error"
-            )
-        finally:
-            task_cancel(func_prefix, task_remove=True, startswith=True)
 
     @time_trigger("shutdown")
     def shutdown(trigger_type=None, var_name=None, value=None, old_value=None):
