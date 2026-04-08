@@ -16,6 +16,8 @@ charging_type:
     description: "Charging during the cheapest periods"
   most_expensive_planner:
     description: "Prioritise charging for the most expensive periods"
+  needed_before_max_level_planner:
+    description: "Charging during required periods before the maximum battery level is reached"
   charging:
     description: "Charging"
   discharging:
@@ -123,25 +125,27 @@ entity:
     debug_log:
       name: "{name}.py debug log"
       description: "{name}.py debug log"
+    solar_charging:
+      name: "Solar surplus charging"
+      description: "Use surplus production; plan weekly from forecast"
     deactivate_script:
       name: "Deactivate script"
       description: "Deactivate the script, charger and car are no longer controlled"
     cheapest_hour_fill_planner:
       name: "Charging: Cheapest periods planner"
       description: "Enable to charge during the cheapest periods"
-
     most_expensive_planner:
       name: "Charging: Most expensive periods planner"
       description: "Enable to charge during the most expensive periods to maximise refund"
-
+    needed_before_max_level_planner:
+      name: "Charging: Required before max level planner"
+      description: "Enable this to charge during required periods before the maximum battery level is reached"
     only_discharge_on_profit:
       name: "Discharging: Profit only"
       description: "Enable to discharge only when profitable"
-
     prioritize_discharge_hours_by_energy_cost:
       name: "Discharging: Prioritise by energy cost"
       description: "Enable to prioritise discharge hours based on energy cost instead of price"
-
     sell_excess_kwh_available:
       name: "Discharging: Sell excess kWh"
       description: "Enable to sell excess kWh to the grid during the most expensive hours"

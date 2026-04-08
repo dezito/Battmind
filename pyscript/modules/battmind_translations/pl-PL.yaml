@@ -16,6 +16,8 @@ charging_type:
     description: "Ładowanie w najtańszych okresach"
   most_expensive_planner:
     description: "Priorytet ładowania w najdroższych okresach"
+  needed_before_max_level_planner:
+    description: "Ładowanie w wymaganych okresach przed osiągnięciem maksymalnego poziomu baterii"
   charging:
     description: "Ładowanie"
   discharging:
@@ -123,25 +125,27 @@ entity:
     debug_log:
       name: "{name}.py log debugowania"
       description: "{name}.py log debugowania"
+    solar_charging:
+      name: "Ładowanie z nadwyżki solarnej"
+      description: "Użyj nadwyżki; planuj tygodniowo wg prognozy"
     deactivate_script:
       name: "Dezaktywuj skrypt"
       description: "Skrypt wyłączony – ładowarka i pojazd nie są sterowane"
     cheapest_hour_fill_planner:
       name: "Ładowanie: Najtańsze okresy"
       description: "Włącz, aby ładować w najtańszych okresach"
-
     most_expensive_planner:
       name: "Ładowanie: Najdroższe okresy"
       description: "Włącz, aby ładować w najdroższych okresach i maksymalizować zwrot"
-
+    needed_before_max_level_planner:
+      name: "Ładowanie: Planowanie przed osiągnięciem maksymalnego poziomu"
+      description: "Włącz, aby ładować w wymaganych okresach przed osiągnięciem maksymalnego poziomu baterii"
     only_discharge_on_profit:
       name: "Rozładowanie: Tylko przy zysku"
       description: "Włącz, aby rozładowywać tylko gdy jest to opłacalne"
-
     prioritize_discharge_hours_by_energy_cost:
       name: "Rozładowanie: Priorytet wg kosztu energii"
       description: "Włącz, aby priorytetyzować godziny rozładowania według kosztu energii zamiast ceny"
-
     sell_excess_kwh_available:
       name: "Rozładowanie: Sprzedaj nadwyżkę kWh"
       description: "Włącz, aby sprzedawać nadwyżkę energii do sieci w najdroższych godzinach"

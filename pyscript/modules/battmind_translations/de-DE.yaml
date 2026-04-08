@@ -16,6 +16,8 @@ charging_type:
     description: "Laden in den günstigsten Zeiträumen"
   most_expensive_planner:
     description: "Laden in den teuersten Zeiträumen priorisieren"
+  needed_before_max_level_planner:
+    description: "Laden in erforderlichen Zeiträumen, bevor der maximale Batteriestand erreicht wird"
   charging:
     description: "Laden"
   discharging:
@@ -123,25 +125,27 @@ entity:
     debug_log:
       name: "{name}.py Debug-Log"
       description: "{name}.py Debug-Log"
+    solar_charging:
+      name: "Solarüberschuss-Laden"
+      description: "Überschuss nutzen; wöchentlich anhand der Prognose planen"
     deactivate_script:
       name: "Skript deaktivieren"
       description: "Skript deaktivieren; Ladegerät und Fahrzeug werden nicht mehr gesteuert"
     cheapest_hour_fill_planner:
       name: "Laden: Günstigste Zeiträume"
       description: "Aktivieren, um in den günstigsten Zeiträumen zu laden"
-
     most_expensive_planner:
       name: "Laden: Teuerste Zeiträume"
       description: "Aktivieren, um in den teuersten Zeiträumen zu laden und die Rückerstattung zu maximieren"
-
+    needed_before_max_level_planner:
+      name: "Laden: Planer vor maximalem Niveau"
+      description: "Aktiviere dies, um in notwendigen Zeiträumen zu laden, bevor der maximale Batteriestand erreicht wird"
     only_discharge_on_profit:
       name: "Entladen: Nur bei Gewinn"
       description: "Aktivieren, um nur zu entladen, wenn es profitabel ist"
-
     prioritize_discharge_hours_by_energy_cost:
       name: "Entladen: Nach Energiekosten priorisieren"
       description: "Aktivieren, um Entladezeiten nach Energiekosten statt nach Preis zu priorisieren"
-
     sell_excess_kwh_available:
       name: "Entladen: Überschüssige kWh verkaufen"
       description: "Aktivieren, um überschüssige Energie in den teuersten Stunden ins Netz zu verkaufen"
