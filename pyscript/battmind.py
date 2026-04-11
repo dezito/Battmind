@@ -4826,8 +4826,7 @@ def cheap_grid_charge_hours():
                                 add_charging_to_days(timestamp, highest_battery_level_timestamp, battery_level_added)
                     else:
                         finished = True
-            
-        
+         
         def discharge_amount(day):
             nonlocal func_name, sub_func_name
             sub_sub_func_name = "discharge_amount"
@@ -5018,64 +5017,96 @@ def cheap_grid_charge_hours():
             
             nonlocal charging_plan, grid_prices, grid_sell_prices
             
-            battery_level_end_of_day = max(sum(charging_plan[day]['battery_level_end_of_day']) - CONFIG['solar']['powerwall_battery_level_min'], 0.0)
-            excess_kwh_available = percentage_to_kwh(battery_level_end_of_day, include_charging_loss = True)
+            lowest_timestamp = charging_plan[day]['end_of_day']
+            lowest_battery_level = sum(charging_plan[day]['battery_level_end_of_day'])
             
-            discharge_hours_needed = round_up(excess_kwh_available / (abs(CONFIG['solar']['powerwall_discharging_power']) / 1000.0))
+            using_next_day = False
+            
+            if day < amount_of_days - 1:
+                timestamp = charging_plan[day + 1]['start_of_day']
+                
+                for hour in range(24):
+                    battery_level = sum(charging_plan[day + 1]['battery_level_flow'].get(hour, [0.0]))
+                    if battery_level > lowest_battery_level or battery_level == CONFIG['solar']['powerwall_battery_level_min']:
+                        break
+                    
+                    if battery_level < lowest_battery_level:
+                        using_next_day = True
+                        lowest_battery_level = battery_level
+                        lowest_timestamp = timestamp.replace(hour=hour)
+                        
+            excess_kwh_available = percentage_to_kwh(max(lowest_battery_level - CONFIG['solar']['powerwall_battery_level_min'], 0.0), include_charging_loss = True)
+            if using_next_day:
+                _LOGGER.info(f"Using lowest battery level of next day before battery charging for calculating excess_kwh_available for day:{day} which is at {lowest_timestamp} with battery level:{lowest_battery_level:.1f}% resulting in excess_kwh_available:{excess_kwh_available:.2f}kWh")
+            
+            discharge_hours_needed = int(round_up(excess_kwh_available / (abs(CONFIG['solar']['powerwall_discharging_power']) / 1000.0)))
             
             battery_kwh_cost_raw, battery_loss_cost, battery_kwh_cost = _get_predicted_battery_cost(day)
             
-            grid_sell_prices_for_day = {timestamp: price for timestamp, price in grid_sell_prices.items() if charging_plan[day]["start_of_day"].date() == timestamp.date()}
+            grid_sell_prices_for_day = {timestamp: price for timestamp, price in grid_sell_prices.items() if in_between(timestamp, charging_plan[day]['start_of_day'], lowest_timestamp + datetime.timedelta(hours=1))}
             
             exclude_hours = get_exclude_sell_hours()
             
             min_profit_per_kwh = get_min_profit_per_kwh()
             
-            for i, (timestamp, price) in enumerate(sorted(grid_sell_prices_for_day.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)):
-                
-                if i >= discharge_hours_needed or excess_kwh_available <= 0.0:
-                    _LOGGER.info(f"Reached discharge_hours_needed:{discharge_hours_needed} or no more excess_kwh_available:{excess_kwh_available}kWh, stopping selling excess kWh for day:{day}")
+            for i in range(discharge_hours_needed):
+                if round(excess_kwh_available, 1) <= 0.0:
+                    _LOGGER.info(f"No more excess_kwh_available:{excess_kwh_available}kWh, stopping selling excess kWh for day:{day}")
                     break
                 
-                if current_hour > timestamp:
-                    continue
+                if i >= discharge_hours_needed:
+                    _LOGGER.info(f"Discharge hours needed {discharge_hours_needed} reached for day:{day}, stopping selling excess kWh")
+                    break
                 
-                if exclude_hours and timestamp.hour in exclude_hours:
-                    _LOGGER.warning(f"Excluding timestamp:{timestamp} from selling excess kWh due to exclude_hours setting")
-                    continue
-                
-                excess_kwh_available_current_hour = min(excess_kwh_available, (abs(CONFIG['solar']['powerwall_discharging_power']) / 1000.0))
-                
-                excess_profit = excess_kwh_available_current_hour * price
-                excess_profit -= excess_kwh_available_current_hour * battery_kwh_cost
-                
-                kwh_profit = price - battery_kwh_cost
-                min_profit_per_kwh = get_min_profit_per_kwh() if only_discharge_on_profit_enabled() else 0.0
-                
-                if kwh_profit < min_profit_per_kwh:
-                    _LOGGER.warning(f"Day:{day} Skipping selling excess kWh at timestamp:{timestamp} due to low profit per kWh:{kwh_profit:.2f} which is less than min_profit_per_kwh:{min_profit_per_kwh:.2f} (price:{price:.2f} - battery_kwh_cost:{battery_kwh_cost:.2f})")
-                    continue
-                _LOGGER.info(f"Day:{day} Selling excess kWh at timestamp:{timestamp} price:{price} battery_kwh_cost:{battery_kwh_cost} profit per kWh:{kwh_profit} excess_kwh_available_current_hour:{excess_kwh_available_current_hour} excess_profit:{excess_profit} excess_kwh_available before selling:{excess_kwh_available}kWh")
-                excess_kwh_available -= excess_kwh_available_current_hour
-                
-                if timestamp in charging_plan[day]["discharge_timestamps"]:
-                    charging_plan[day]["discharge_timestamps"].remove(timestamp)
-                
-                charging_plan[day]["force_discharge_timestamps"][timestamp] = {
-                    "kwh": excess_kwh_available_current_hour,
-                    "profit": excess_profit,
-                    "reason": (
-                        f"<details><summary>{emoji_parse({'discharging': True})}Sælger overskydende kWh ({excess_profit:.2f})</summary>"
-                        f"Battery kWh cost (basis): **{battery_kwh_cost_raw:.2f} valuta/kWh**<br>"
-                        f"Charge/Discharge loss: **{battery_loss_cost:.2f} valuta/kWh**<br>"
-                        f"Wear cost per kWh: **{abs(CONFIG['solar']['powerwall_wear_cost_per_kwh']):.2f} valuta/kWh**<br>"
-                        f"**Samlet battery kWh cost**: **{battery_kwh_cost:.2f} valuta/kWh**<br>"
-                        f"Grid price: **{price:.2f} valuta/kWh**<br>"
-                        f"Excess kWh sold: **{excess_kwh_available_current_hour:.2f} kWh**<br>"
-                        f"Profit from selling: **{excess_profit:.2f} valuta**<br>"
-                        "</details>"
-                    ),
-                    }
+                for timestamp, price in sorted(grid_sell_prices_for_day.items(), key=lambda kv: (kv[1], kv[0]), reverse=True):
+                    if round(excess_kwh_available, 1) <= 0.0:
+                        break
+                    
+                    if timestamp < current_hour:
+                        continue
+                    
+                    if exclude_hours and timestamp.hour in exclude_hours:
+                        _LOGGER.warning(f"Excluding timestamp:{timestamp} from selling excess kWh due to exclude_hours setting")
+                        continue
+                    
+                    excess_kwh_available_current_hour = min(excess_kwh_available, (abs(CONFIG['solar']['powerwall_discharging_power']) / 1000.0))
+                    
+                    excess_profit = excess_kwh_available_current_hour * price
+                    excess_profit -= excess_kwh_available_current_hour * battery_kwh_cost
+                    
+                    kwh_profit = price - battery_kwh_cost
+                    min_profit_per_kwh = get_min_profit_per_kwh() if only_discharge_on_profit_enabled() else 0.0
+                    
+                    if kwh_profit < min_profit_per_kwh:
+                        _LOGGER.warning(f"Day:{day} Skipping selling excess kWh at timestamp:{timestamp} due to low profit per kWh:{kwh_profit:.2f} which is less than min_profit_per_kwh:{min_profit_per_kwh:.2f} (price:{price:.2f} - battery_kwh_cost:{battery_kwh_cost:.2f})")
+                        continue
+                    _LOGGER.info(f"Day:{day} Selling excess kWh at timestamp:{timestamp} price:{price} battery_kwh_cost:{battery_kwh_cost} profit per kWh:{kwh_profit} excess_kwh_available_current_hour:{excess_kwh_available_current_hour} excess_profit:{excess_profit} excess_kwh_available before selling:{excess_kwh_available}kWh")
+                    excess_kwh_available -= excess_kwh_available_current_hour
+                    
+                    if timestamp in charging_plan[day]["discharge_timestamps"]:
+                        charging_plan[day]["discharge_timestamps"].remove(timestamp)
+                    
+                    what_day = daysBetween(current_hour, timestamp)
+                    
+                    other_day = ""
+                    if what_day != day:
+                        other_day = f"<br><center>**({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})**</center>"
+                    
+                    charging_plan[what_day]["force_discharge_timestamps"][timestamp] = {
+                        "kwh": excess_kwh_available_current_hour,
+                        "profit": excess_profit,
+                        "reason": (
+                            f"<details><summary>{emoji_parse({'discharging': True})}Sælger overskydende kWh ({excess_profit:.2f}){other_day}</summary>"
+                            f"Battery kWh cost (basis): **{battery_kwh_cost_raw:.2f} valuta/kWh**<br>"
+                            f"Charge/Discharge loss: **{battery_loss_cost:.2f} valuta/kWh**<br>"
+                            f"Wear cost per kWh: **{abs(CONFIG['solar']['powerwall_wear_cost_per_kwh']):.2f} valuta/kWh**<br>"
+                            f"**Samlet battery kWh cost**: **{battery_kwh_cost:.2f} valuta/kWh**<br>"
+                            f"Grid price: **{price:.2f} valuta/kWh**<br>"
+                            f"Excess kWh sold: **{excess_kwh_available_current_hour:.2f} kWh**<br>"
+                            f"Profit from selling: **{excess_profit:.2f} valuta**<br>"
+                            "</details>"
+                        ),
+                        }
             
             if len(charging_plan[day]["force_discharge_timestamps"]) == 0:
                 sorted_sell_prices_for_day = sorted(grid_sell_prices_for_day.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)
