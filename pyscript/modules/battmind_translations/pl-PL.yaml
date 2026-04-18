@@ -134,6 +134,9 @@ entity:
     cheapest_hour_fill_planner:
       name: "Ładowanie: Najtańsze okresy"
       description: "Włącz, aby ładować w najtańszych okresach"
+    cheapest_hour_fill_up:
+      name: "Ładowanie: Doładuj w najtańszym okresie"
+      description: "Włącz, aby ładować do maksymalnego poziomu baterii w najtańszym okresie, w przeciwnym razie tylko do potrzebnego poziomu"
     most_expensive_planner:
       name: "Ładowanie: Najdroższe okresy"
       description: "Włącz, aby ładować w najdroższych okresach i maksymalizować zwrot"
@@ -149,6 +152,9 @@ entity:
     sell_excess_kwh_available:
       name: "Rozładowanie: Sprzedaj nadwyżkę kWh"
       description: "Włącz, aby sprzedawać nadwyżkę energii do sieci w najdroższych godzinach"
+    use_midnight_battery_level:
+      name: "Użyj poziomu baterii o północy"
+      description: "Włącz, aby używać poziomu baterii o północy dla 'Sprzedaj nadwyżkę kWh', zamiast najniższego poziomu baterii następnego dnia przed ładowaniem"
 
   input_number:
     kwh_charged_by_solar:

@@ -137,6 +137,9 @@ entity:
     cheapest_hour_fill_planner:
       name: "Ladning: Billigste perioder planlægger"
       description: "Aktiver denne for at lade i de billigste perioder"
+    cheapest_hour_fill_up:
+      name: "Ladning: Fyld op i billigste periode"
+      description: "Aktiver denne for at lade i den billigste periode op til max batteriniveau ellers kun til nødvendigt forbrug"
     most_expensive_planner:
       name: "Ladning: Dyreste perioder planlægger"
       description: "Aktiver denne for at lade til de dyreste perioder, for at maksimere refusion"
@@ -152,6 +155,9 @@ entity:
     sell_excess_kwh_available:
       name: "Afladning: Sælg overskydende kWh tilgængelig"
       description: "Aktiver denne for at sælge overskydende kWh til nettet i de dyreste timer"
+    use_midnight_battery_level:
+      name: "Brug midnat batteriniveau"
+      description: "Aktiver denne for at bruge batteriniveauet ved midnat for Sælg overskydende kWh tilgængelig, i stedet for næste dags laveste batteriniveau, inden ladning"
 
   # ---- input_number ----
   input_number:

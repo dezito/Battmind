@@ -325,11 +325,13 @@ DEFAULT_ENTITIES = {
             f"input_boolean.{__name__}_deactivate_script": {},
             f"input_boolean.{__name__}_solar_charging": {},
             f"input_boolean.{__name__}_cheapest_hour_fill_planner": {},
+            f"input_boolean.{__name__}_cheapest_hour_fill_up": {},
             f"input_boolean.{__name__}_most_expensive_planner": {},
             f"input_boolean.{__name__}_needed_before_max_level_planner": {},
             f"input_boolean.{__name__}_only_discharge_on_profit": {},
             f"input_boolean.{__name__}_prioritize_discharge_hours_by_energy_cost": {},
             f"input_boolean.{__name__}_sell_excess_kwh_available": {},
+            f"input_boolean.{__name__}_use_midnight_battery_level": {},
             
             f"input_number.{__name__}_kwh_charged_by_solar": {},
             f"input_number.{__name__}_solar_sell_fixed_price": {},
@@ -377,6 +379,9 @@ DEFAULT_ENTITIES = {
         f"{__name__}_cheapest_hour_fill_planner":{
             "icon": "mdi:hand-coin"
         },
+        f"{__name__}_cheapest_hour_fill_up":{
+            "icon": "mdi:power-plug-battery"
+        },
         f"{__name__}_most_expensive_planner":{
             "icon": "mdi:chart-bar"
         },
@@ -392,6 +397,9 @@ DEFAULT_ENTITIES = {
         },
         f"{__name__}_sell_excess_kwh_available":{
             "icon": "mdi:basket-unfill"
+        },
+        f"{__name__}_use_midnight_battery_level":{
+            "icon": "mdi:chart-histogram"
         },
     },
     "input_number":{
@@ -2617,6 +2625,10 @@ def consumption_forecast_type():
 def cheapest_hour_fill_planner_enabled():
     if get_state(f"input_boolean.{__name__}_cheapest_hour_fill_planner") == "on":
         return True
+
+def cheapest_hour_fill_up_enabled():
+    if get_state(f"input_boolean.{__name__}_cheapest_hour_fill_up") == "on":
+        return True
     
 def most_expensive_planner_enabled():
     if get_state(f"input_boolean.{__name__}_most_expensive_planner") == "on":
@@ -2636,6 +2648,10 @@ def prioritize_discharge_hours_by_energy_cost_enabled():
     
 def sell_excess_kwh_available_enabled():
     if get_state(f"input_boolean.{__name__}_sell_excess_kwh_available") == "on":
+        return True
+    
+def use_midnight_battery_level_enabled():
+    if get_state(f"input_boolean.{__name__}_use_midnight_battery_level") == "on":
         return True
     
 def get_tariffs(hour, day_of_week):
@@ -4472,9 +4488,12 @@ def cheap_grid_charge_hours():
                     
                     percentage_needed_today = []
                     
-                    from_hour = getHour() if day == 0 else 0
-                    for hour in range(from_hour, 24):
-                        percentage_needed_today.append(charging_plan[day]['hour_cost_prediction'][FORECAST_TYPE][hour]['percentage'])
+                    if cheapest_hour_fill_up_enabled():
+                        percentage_needed_today = [CONFIG['solar']['powerwall_battery_level_max']]
+                    else:
+                        from_hour = getHour() if day == 0 else 0
+                        for hour in range(from_hour, 24):
+                            percentage_needed_today.append(charging_plan[day]['hour_cost_prediction'][FORECAST_TYPE][hour]['percentage'])
                     
                     for hour in range(cheap_timestamp.hour, 24):
                         battery_level = sum(charging_plan[day]['battery_level_flow'].get(hour, [0.0]))
@@ -5022,20 +5041,22 @@ def cheap_grid_charge_hours():
             
             using_next_day = False
             
-            if day < amount_of_days - 1:
-                timestamp = charging_plan[day + 1]['start_of_day']
-                
-                for hour in range(24):
-                    battery_level = sum(charging_plan[day + 1]['battery_level_flow'].get(hour, [0.0]))
-                    if battery_level > lowest_battery_level or battery_level == CONFIG['solar']['powerwall_battery_level_min']:
-                        break
+            if not use_midnight_battery_level_enabled():
+                if day < amount_of_days - 1:
+                    timestamp = charging_plan[day + 1]['start_of_day']
                     
-                    if battery_level < lowest_battery_level:
-                        using_next_day = True
-                        lowest_battery_level = battery_level
-                        lowest_timestamp = timestamp.replace(hour=hour)
+                    for hour in range(24):
+                        battery_level = sum(charging_plan[day + 1]['battery_level_flow'].get(hour, [0.0]))
+                        if battery_level > lowest_battery_level or battery_level == CONFIG['solar']['powerwall_battery_level_min']:
+                            break
+                        
+                        if battery_level < lowest_battery_level:
+                            using_next_day = True
+                            lowest_battery_level = battery_level
+                            lowest_timestamp = timestamp.replace(hour=hour)
                         
             excess_kwh_available = percentage_to_kwh(max(lowest_battery_level - CONFIG['solar']['powerwall_battery_level_min'], 0.0), include_charging_loss = True)
+            
             if using_next_day:
                 _LOGGER.info(f"Using lowest battery level of next day before battery charging for calculating excess_kwh_available for day:{day} which is at {lowest_timestamp} with battery level:{lowest_battery_level:.1f}% resulting in excess_kwh_available:{excess_kwh_available:.2f}kWh")
             
@@ -5080,6 +5101,7 @@ def cheap_grid_charge_hours():
                     if kwh_profit < min_profit_per_kwh:
                         _LOGGER.warning(f"Day:{day} Skipping selling excess kWh at timestamp:{timestamp} due to low profit per kWh:{kwh_profit:.2f} which is less than min_profit_per_kwh:{min_profit_per_kwh:.2f} (price:{price:.2f} - battery_kwh_cost:{battery_kwh_cost:.2f})")
                         continue
+                    
                     _LOGGER.info(f"Day:{day} Selling excess kWh at timestamp:{timestamp} price:{price} battery_kwh_cost:{battery_kwh_cost} profit per kWh:{kwh_profit} excess_kwh_available_current_hour:{excess_kwh_available_current_hour} excess_profit:{excess_profit} excess_kwh_available before selling:{excess_kwh_available}kWh")
                     excess_kwh_available -= excess_kwh_available_current_hour
                     
