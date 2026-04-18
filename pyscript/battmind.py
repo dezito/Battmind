@@ -4560,7 +4560,6 @@ def cheap_grid_charge_hours():
                                 if what_day != day:
                                     other_day = f"<br><center>**({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})**</center>"
                                 
-                                _LOGGER.info(f"Day:{day} Added charging at hour:{timestamp} battery_level_added:{battery_level_added:.1f}% cost_added:{cost_added:.2f} valuta total_cost before:{charging_plan[day]['total_cost']:.2f}")
                                 charging_plan[day]['total_cost'] += cost_added
                                 reason = (
                                     f"<details><summary>{emoji_parse({'charging': True})}Billigste timer ({price}/{battery_level_added:.0f}%){other_day}</summary>"
@@ -4701,8 +4700,6 @@ def cheap_grid_charge_hours():
                                 other_day = ""
                                 if what_day != day:
                                     other_day = f"<br><center>**({charging_plan[day]['start_of_day'].date().strftime('%d/%m')})**</center>"
-                                    
-                                _LOGGER.info(f"day:{day} kwh_profit:{kwh_profit} = sorted_price:{sorted_price} - (calc_battery_loss_cost({price}):{calc_battery_loss_cost(price)} + {abs(CONFIG['solar']['powerwall_wear_cost_per_kwh'])})")
                                 
                                 charging_plan[day]['total_cost'] += cost_added
                                 reason = (
@@ -4785,8 +4782,6 @@ def cheap_grid_charge_hours():
                 
                 needed_timestamp = charging_plan[day]["start_of_day"].replace(hour=hour)
                 needed_price = hour_prices.get(needed_timestamp, None)
-                
-                _LOGGER.info(f"Hour:{hour} battery_level:{battery_level:.1f}% kwh_needed:{kwh_needed:.2f}kWh")
                 
                 finished = False
                 
@@ -4886,7 +4881,6 @@ def cheap_grid_charge_hours():
                 
             for timestamp, charging_session in charging_plan[day]['charging_sessions'].items():
                 if timestamp >= current_hour:
-                    _LOGGER.info(f"Adding charging session for day:{day} timestamp:{timestamp} kWh:{charging_session['kWh']} cost:{charging_session['Cost']}")
                     total_grid_solar_kwh.append(charging_session['kWh'])
                     total_grid_cost_prediction.append(charging_session['Cost'])
             
@@ -4896,15 +4890,14 @@ def cheap_grid_charge_hours():
             
             if not isinstance(powerwall_kwh_price, (int, float)):
                 powerwall_kwh_price = get_powerwall_kwh_price()
-            _LOGGER.info(f"Adding powerwall kWh for day:{day} kWh:{powerwall_kwh} price:{powerwall_kwh_price}")
+            
             total_grid_solar_kwh.append(powerwall_kwh)
             total_grid_cost_prediction.append(powerwall_kwh_price * powerwall_kwh)
             
-            _LOGGER.warning(f"Total grid solar kWh prediction for day:{day}: {total_grid_solar_kwh} total grid cost prediction for day:{day}: {total_grid_cost_prediction}")
             battery_kwh_cost_raw = (sum(total_grid_cost_prediction)) / sum(total_grid_solar_kwh) if sum(total_grid_solar_kwh) > 0.0 else 0.0
             battery_loss_cost = calc_battery_loss_cost(battery_kwh_cost_raw)
             battery_kwh_cost = battery_kwh_cost_raw + battery_loss_cost + abs(CONFIG['solar']['powerwall_wear_cost_per_kwh'])
-            _LOGGER.info(f"Predicted battery kWh cost for day:{day} battery_kwh_cost_raw:{battery_kwh_cost_raw:.2f} battery_loss_cost:{battery_loss_cost:.2f} battery_kwh_cost:{battery_kwh_cost:.2f}")
+            
             return battery_kwh_cost_raw, battery_loss_cost, battery_kwh_cost
         
         def only_discharge_on_profit(day):
@@ -7199,7 +7192,7 @@ def load_kwh_prices():
         TASKS[f'{func_prefix}load_yaml'] = task.create(load_yaml, filename)
         done, pending = task.wait({TASKS[f'{func_prefix}load_yaml']})
         database = TASKS[f'{func_prefix}load_yaml'].result()
-        _LOGGER.info(f"Loaded {__name__}_kwh_avg_prices_db: {database}")
+        
         if "version" in database:
             del database["version"]
         
