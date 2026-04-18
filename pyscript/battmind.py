@@ -6066,39 +6066,48 @@ def power_from_ignored(from_timestamp, to_timestamp):
         _LOGGER.warning(f"Cant get ignore values from {from_timestamp} to {to_timestamp}: {e} {type(e)}")
     return round(total, 2)
 
-def charge_from_powerwall(from_timestamp, to_timestamp) -> float:
+def get_powerwall_values(from_timestamp, to_timestamp):
+    func_name = "powerwall_values"
+    _LOGGER = globals()['_LOGGER'].getChild(func_name)
+    
+    powerwall_values = []
+    
+    try:
+        powerwall_values = get_values(CONFIG['home']['entity_ids']['powerwall_watt_flow_entity_id'], from_timestamp, to_timestamp, float_type=True, convert_to="W", error_state=[0.0])
+    except Exception as e:
+        _LOGGER.warning(f"Cant get powerwall values from {from_timestamp} to {to_timestamp}: {e} {type(e)}")
+    
+    return powerwall_values
+
+def charge_from_powerwall(powerwall_values) -> float:
     func_name = "charge_from_powerwall"
     _LOGGER = globals()['_LOGGER'].getChild(func_name)
     
     powerwall_charging_consumption = 0.0
     
     try:
-        powerwall_values = get_values(CONFIG['home']['entity_ids']['powerwall_watt_flow_entity_id'], from_timestamp, to_timestamp, float_type=True, convert_to="W", error_state=[0.0])
-
         if CONFIG['home']['invert_powerwall_watt_flow_entity_id']:
             powerwall_charging_consumption = abs(round(average(get_specific_values(powerwall_values, positive_only = True)), 0))
         else:
             powerwall_charging_consumption = abs(round(average(get_specific_values(powerwall_values, negative_only = True)), 0))
     except Exception as e:
-        _LOGGER.warning(f"Cant get powerwall values from {from_timestamp} to {to_timestamp}: {e} {type(e)}")
+        _LOGGER.warning(f"Cant get powerwall charging consumption from values: {e} {type(e)}")
     
     return powerwall_charging_consumption
 
-def discharge_from_powerwall(from_timestamp, to_timestamp):
+def discharge_from_powerwall(powerwall_values) -> float:
     func_name = "discharge_from_powerwall"
     _LOGGER = globals()['_LOGGER'].getChild(func_name)
     
     powerwall_discharging_consumption = 0.0
     
     try:
-        powerwall_values = get_values(CONFIG['home']['entity_ids']['powerwall_watt_flow_entity_id'], from_timestamp, to_timestamp, float_type=True, convert_to="W", error_state=[0.0])
-        
         if CONFIG['home']['invert_powerwall_watt_flow_entity_id']:
             powerwall_discharging_consumption = abs(round(average(get_specific_values(powerwall_values, negative_only = True)), 0))
         else:
             powerwall_discharging_consumption = abs(round(average(get_specific_values(powerwall_values, positive_only = True)), 0))
     except Exception as e:
-        _LOGGER.warning(f"Cant get powerwall values from {from_timestamp} to {to_timestamp}: {e} {type(e)}")
+        _LOGGER.warning(f"Cant get powerwall discharging consumption from values: {e} {type(e)}")
         
     return powerwall_discharging_consumption
 
@@ -6112,8 +6121,7 @@ def power_values(from_timestamp = None, to_timestamp = None, period = None):
     task_names = {
         "power_consumption": f"{func_prefix}power_consumption_{func_id}",
         "ignored_consumption": f"{func_prefix}ignored_consumption_{func_id}",
-        "powerwall_charging_consumption": f"{func_prefix}powerwall_charging_consumption_{func_id}",
-        "powerwall_discharging_consumption": f"{func_prefix}powerwall_discharging_consumption_{func_id}",
+        "powerwall_values": f"{func_prefix}powerwall_values_{func_id}",
         "solar_production": f"{func_prefix}solar_production_{func_id}"
     }
     
@@ -6133,18 +6141,20 @@ def power_values(from_timestamp = None, to_timestamp = None, period = None):
         
         TASKS[task_names["power_consumption"]] = task.create(get_average_value, CONFIG['home']['entity_ids']['power_consumption_entity_id'], from_timestamp, to_timestamp, convert_to="W", error_state=0.0)
         TASKS[task_names["ignored_consumption"]] = task.create(power_from_ignored, from_timestamp, to_timestamp)
-        TASKS[task_names["powerwall_charging_consumption"]] = task.create(charge_from_powerwall, from_timestamp, to_timestamp)
-        TASKS[task_names["powerwall_discharging_consumption"]] = task.create(discharge_from_powerwall, from_timestamp, to_timestamp)
+        TASKS[task_names["powerwall_values"]] = task.create(get_powerwall_values, from_timestamp, to_timestamp)
         TASKS[task_names["solar_production"]] = task.create(get_average_value, CONFIG['solar']['entity_ids']['production_entity_id'], from_timestamp, to_timestamp, convert_to="W", error_state=0.0)
         
         done, pending = task.wait({TASKS[task_names["power_consumption"]], TASKS[task_names["ignored_consumption"]],
-                                TASKS[task_names["powerwall_charging_consumption"]], TASKS[task_names["powerwall_discharging_consumption"]],
+                                TASKS[task_names["powerwall_values"]],
                                 TASKS[task_names["solar_production"]]})
         
         power_consumption = abs(round(float(TASKS[task_names["power_consumption"]].result()), 2))
         ignored_consumption = abs(TASKS[task_names["ignored_consumption"]].result())
-        powerwall_charging_consumption = TASKS[task_names["powerwall_charging_consumption"]].result()
-        powerwall_discharging_consumption = TASKS[task_names["powerwall_discharging_consumption"]].result()
+        
+        powerwall_values = TASKS[task_names["powerwall_values"]].result()
+        powerwall_charging_consumption = charge_from_powerwall(powerwall_values)
+        powerwall_discharging_consumption = discharge_from_powerwall(powerwall_values)
+        
         solar_production = abs(round(float(TASKS[task_names["solar_production"]].result()), 2))
                     
         if not CONFIG['home']['power_consumption_entity_id_include_powerwall_discharging']:
@@ -7097,18 +7107,19 @@ def kwh_charged_by_solar():
         now = getTime()
         past = now - datetime.timedelta(minutes=60)
         
-        TASKS[f"{func_prefix}watt"] = task.create(charge_from_powerwall, past, now)
+        TASKS[f"{func_prefix}powerwall_values"] = task.create(get_powerwall_values, past, now)
         TASKS[f"{func_prefix}solar_watt"] = task.create(local_energy_available, period = 60, without_all_exclusion = True, solar_only = True)
-        done, pending = task.wait({TASKS[f"{func_prefix}watt"], TASKS[f"{func_prefix}solar_watt"]})
+        done, pending = task.wait({TASKS[f"{func_prefix}powerwall_values"], TASKS[f"{func_prefix}solar_watt"]})
         
-        watt = TASKS[f"{func_prefix}watt"].result()
+        powerwall_values = TASKS[f"{func_prefix}powerwall_values"].result()
         solar_watt = TASKS[f"{func_prefix}solar_watt"].result()
         
-        if not watt or not solar_watt:
-            _LOGGER.error("No watt or solar_watt value, returning without setting kwh charged by solar")
-            _LOGGER.error(f"watt: {watt}, solar_watt: {solar_watt}")
+        if not powerwall_values or not solar_watt:
+            _LOGGER.error("No powerwall_values or solar_watt value, returning without setting kwh charged by solar")
+            _LOGGER.error(f"powerwall_values: {powerwall_values}, solar_watt: {solar_watt}")
             return
         
+        watt = charge_from_powerwall(powerwall_values)
         watt = round(abs(float(watt)), 3)
         solar_watt = round(max(float(solar_watt), 0.0), 3)
         
