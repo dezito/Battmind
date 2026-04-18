@@ -3600,7 +3600,7 @@ async def charging_history(timestamp=None, save_db = True):
         solar_charge_share_pct = max(solar_production_kwh / charge_kwh if charge_kwh > 0.0 else 0.0, 0.0)
         solar_discharge_share_pct = max(solar_production_kwh / (discharge_kwh + home_consumption_kwh) if discharge_kwh > 0.0 else 0.0, 0.0)
         
-        powerwall_discharge_share_pct = max(discharge_kwh / (home_consumption_kwh - solar_production_kwh) if (home_consumption_kwh - solar_production_kwh) > 0.0 else 0.0, 0.0)
+        powerwall_discharge_share_pct = max(discharge_kwh / home_consumption_without_solar_kwh if home_consumption_without_solar_kwh > 0.0 else 0.0, 0.0)
         
         share_pct_sum = charge_grid_share_pct + solar_charge_share_pct + discharge_grid_share_pct + solar_discharge_share_pct + powerwall_discharge_share_pct
         normalization_factor = share_pct_sum / 1.0 if share_pct_sum > 0.0 else 1.0
@@ -3611,6 +3611,7 @@ async def charging_history(timestamp=None, save_db = True):
         solar_discharge_share_pct /= normalization_factor
         powerwall_discharge_share_pct /= normalization_factor
         
+        _LOGGER.info(f"debug {start} normalization_factor: {normalization_factor:.3f}")
         _LOGGER.info(f"debug {start} home_consumption_kwh: {home_consumption_kwh:.3f} kWh, charge_kwh: {charge_kwh:.3f} kWh, discharge_kwh: {discharge_kwh:.3f} kWh, solar_production_kwh: {solar_production_kwh:.3f} kWh, grid_consumption_kwh: {grid_consumption_kwh:.3f} kWh")
         _LOGGER.info(f"debug {start} charge_grid_share_pct: {charge_grid_share_pct * 100:.1f}%, discharge_grid_share_pct: {discharge_grid_share_pct * 100:.1f}%, powerwall_discharge_share_pct: {powerwall_discharge_share_pct * 100:.1f}%")
         _LOGGER.info(f"debug {start} solar_charge_share_pct: {solar_charge_share_pct * 100:.1f}%, solar_discharge_share_pct: {solar_discharge_share_pct * 100:.1f}%")
