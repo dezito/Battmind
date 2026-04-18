@@ -4533,7 +4533,7 @@ def cheap_grid_charge_hours():
                             min_profit_per_kwh = get_min_profit_per_kwh() if only_discharge_on_profit_enabled() else 0.0
                             
                             if profit < min_profit_per_kwh:
-                                _LOGGER.info(f"Not adding hour {timestamp.replace(hour=hour)} to kwh_with_profit because profit {profit} is lower than min_profit_per_kwh {min_profit_per_kwh}")
+                                _LOGGER.debug(f"Not adding hour {timestamp.replace(hour=hour)} to kwh_with_profit because profit {profit} is lower than min_profit_per_kwh {min_profit_per_kwh}")
                                 continue
                             
                             kwh_with_profit.append(charging_plan[day]['hour_cost_prediction'][FORECAST_TYPE][hour]['kwh'])
