@@ -381,7 +381,7 @@ ui:
     no_charging_modes_active: "Ingen laderegler aktiv\nLader {watt}W"
     planned_charging: "Lader op til {emoji}"
     not_charging: "Lader ikke"
-    stopped: "Opladning & afladning stoppet"
+    force_solar_only_charging: "Kun solcelle ladning tilladt"
     grid_charging: "Oplader fra nettet"
     discharge_allowed: "Afladning tilladt"
     force_discharge: "Tvangsafladning"

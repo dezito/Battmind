@@ -336,7 +336,7 @@ ui:
     no_charging_modes_active: "Brak aktywnych trybów ładowania\nŁadowanie {watt}W"
     planned_charging: "Ładowanie do {emoji}"
     not_charging: "Nie ładuje"
-    stopped: "Ładowanie i rozładowanie zatrzymane"
+    force_solar_only_charging: "Dozwolone tylko ładowanie z energii słonecznej"
     grid_charging: "Ładowanie z sieci"
     discharge_allowed: "Rozładowanie dozwolone"
     force_discharge: "Wymuszone rozładowanie"

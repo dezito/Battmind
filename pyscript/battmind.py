@@ -120,7 +120,7 @@ CURRENT_CHARGING_AMPS = [0, 0, 0]
 ERROR_COUNT = 0
 
 ENTITY_UNAVAILABLE_STATES = (None, "unavailable", "unknown")
-POWERWALL_ACTION_STATES = ("grid_charging", "discharge_allowed", "stopped", "force_discharge", "force_charge")
+POWERWALL_ACTION_STATES = ("grid_charging", "discharge_allowed", "force_solar_only_charging", "force_discharge", "force_charge")
 
 FORECAST_TYPE = "ema"
 
@@ -5522,7 +5522,7 @@ def cheap_grid_charge_hours():
     charge_timestamps = []
     discharge_timestamps = []
     force_discharge_timestamps = []
-    stopped_timestamps = []
+    force_solar_only_charging_timestamps = []
     
     for day in charging_plan.keys():
         if not isinstance(day, int):
@@ -5543,12 +5543,12 @@ def cheap_grid_charge_hours():
                 timestamp in force_discharge_timestamps):
                 continue
             
-            stopped_timestamps.append(timestamp)
+            force_solar_only_charging_timestamps.append(timestamp)
         
     set_attr(f"sensor.{__name__}_powerwall_action.charge_timestamps", charge_timestamps)
     set_attr(f"sensor.{__name__}_powerwall_action.discharge_timestamps", discharge_timestamps)
     set_attr(f"sensor.{__name__}_powerwall_action.force_discharge_timestamps", force_discharge_timestamps)
-    set_attr(f"sensor.{__name__}_powerwall_action.stopped_timestamps", stopped_timestamps)
+    set_attr(f"sensor.{__name__}_powerwall_action.force_solar_only_charging_timestamps", force_solar_only_charging_timestamps)
             
     hour_cost_prediction_avg_dict = {}
     hour_cost_prediction_ema_dict = {}
@@ -7009,7 +7009,7 @@ def charge_if_needed():
             return
         
         charging_rule = i18n.t('ui.charge_if_needed.not_charging')
-        powerwall_action = "stopped"
+        powerwall_action = "force_solar_only_charging"
         
         TASKS[f"{func_prefix}cheap_grid_charge_hours"] = task.create(cheap_grid_charge_hours)
         done, pending = task.wait({TASKS[f"{func_prefix}cheap_grid_charge_hours"]})

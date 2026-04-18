@@ -336,7 +336,7 @@ ui:
     no_charging_modes_active: "No charging modes active\nCharging {watt}W"
     planned_charging: "Charging up to {emoji}"
     not_charging: "Not charging"
-    stopped: "Charging & discharging stopped"
+    force_solar_only_charging: "Solar-only charging allowed"
     grid_charging: "Charging from grid"
     discharge_allowed: "Discharging allowed"
     force_discharge: "Forced discharging"
