@@ -134,6 +134,9 @@ entity:
     cheapest_hour_fill_planner:
       name: "Laden: Günstigste Zeiträume"
       description: "Aktivieren, um in den günstigsten Zeiträumen zu laden"
+    cheapest_hour_fill_up:
+      name: "Laden: In der günstigsten Zeit vollständig laden"
+      description: "Aktiviere dies, um in der günstigsten Zeit bis zum maximalen Batteriestand zu laden, ansonsten nur bis zum benötigten Verbrauch"
     most_expensive_planner:
       name: "Laden: Teuerste Zeiträume"
       description: "Aktivieren, um in den teuersten Zeiträumen zu laden und die Rückerstattung zu maximieren"
@@ -149,6 +152,9 @@ entity:
     sell_excess_kwh_available:
       name: "Entladen: Überschüssige kWh verkaufen"
       description: "Aktivieren, um überschüssige Energie in den teuersten Stunden ins Netz zu verkaufen"
+    use_midnight_battery_level:
+      name: "Mitternachts-Batteriestand verwenden"
+      description: "Aktiviere dies, um den Batteriestand um Mitternacht für 'Überschüssige kWh verkaufen' zu verwenden, anstelle des niedrigsten Batteriestands des nächsten Tages vor dem Laden"
 
   input_number:
     kwh_charged_by_solar:
@@ -330,7 +336,7 @@ ui:
     no_charging_modes_active: "Keine Lade-Regeln aktiv\nLädt {watt}W"
     planned_charging: "Lädt bis {emoji}"
     not_charging: "Lädt nicht"
-    stopped: "Laden & Entladen gestoppt"
+    force_solar_only_charging: "Nur Solarladung erlaubt"
     grid_charging: "Lädt aus dem Netz"
     discharge_allowed: "Entladen erlaubt"
     force_discharge: "Erzwungene Entladung"

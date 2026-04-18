@@ -134,6 +134,9 @@ entity:
     cheapest_hour_fill_planner:
       name: "Charging: Cheapest periods planner"
       description: "Enable to charge during the cheapest periods"
+    cheapest_hour_fill_up:
+      name: "Charging: Fill up during cheapest period"
+      description: "Enable this to charge to maximum battery level during the cheapest period, otherwise only charge what is needed"
     most_expensive_planner:
       name: "Charging: Most expensive periods planner"
       description: "Enable to charge during the most expensive periods to maximize refund"
@@ -149,6 +152,9 @@ entity:
     sell_excess_kwh_available:
       name: "Discharging: Sell excess kWh"
       description: "Enable to sell excess kWh to the grid during the most expensive hours"
+    use_midnight_battery_level:
+      name: "Use midnight battery level"
+      description: "Enable this to use the battery level at midnight for 'Sell excess kWh available', instead of the next day's lowest battery level before charging"
 
   input_number:
     kwh_charged_by_solar:
@@ -330,7 +336,7 @@ ui:
     no_charging_modes_active: "No charging modes active\nCharging {watt}W"
     planned_charging: "Charging up to {emoji}"
     not_charging: "Not charging"
-    stopped: "Charging & discharging stopped"
+    force_solar_only_charging: "Solar-only charging allowed"
     grid_charging: "Charging from grid"
     discharge_allowed: "Discharging allowed"
     force_discharge: "Forced discharging"
