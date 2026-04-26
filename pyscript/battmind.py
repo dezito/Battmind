@@ -7055,10 +7055,20 @@ def charge_if_needed():
                 charging_rule = i18n.t('ui.charge_if_needed.not_charging')
                 
         if powerwall_watt_flow != 0:
-            if powerwall_watt_flow > 0 and CONFIG['home']['invert_powerwall_watt_flow_entity_id']:
-                charging_rule += f"\n{i18n.t('ui.charge_if_needed.charging_watt', watt=int(powerwall_watt_flow))}{emoji_parse({'average': True})}"
-            else:
-                charging_rule += f"\n{i18n.t('ui.charge_if_needed.discharging_watt', watt=int(powerwall_watt_flow))}{emoji_parse({'average': True})}"
+            flow = powerwall_watt_flow
+            # Normaliser så:
+            # + = charging
+            # - = discharging
+            if not CONFIG['home']['invert_powerwall_watt_flow_entity_id']:
+                flow = -flow
+
+            is_charging = flow > 0
+            key = 'charging_watt' if is_charging else 'discharging_watt'
+
+            charging_rule += (
+                f"\n{i18n.t(f'ui.charge_if_needed.{key}', watt=powerwall_watt_flow)}"
+                f"{emoji_parse({'average': True})}"
+            )
                 
         set_charging_rule(charging_rule)
             
